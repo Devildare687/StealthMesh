@@ -6,7 +6,34 @@ StealthMesh starts from `permissionlesstech/bitchat-android` at commit
 `09b481f1ef5852ed50edce987dd719bd9588b125`. Checkpoint 00 intentionally makes
 no production-code or build-configuration changes.
 
-## Current data flow
+## Current StealthMesh product flow
+
+```text
+StealthMeshScreen (Compose)
+            |
+            v
+StealthMeshViewModel
+            |
+            v
+AppStateStealthMeshRepository -------> MeshService send API
+            |                                  |
+            v                                  v
+       AppStateStore <--------------- existing mesh services
+                                               |
+                                               v
+                                         Bluetooth LE
+```
+
+- `StealthMeshScreen` renders immutable `StealthMeshUiState` and forwards draft
+  and send actions.
+- `StealthMeshViewModel` combines repository state with saved draft state.
+- `AppStateStealthMeshRepository` maps peers, direct links, nicknames, signal
+  strength, and public messages from `AppStateStore` into product models. Public
+  sends use the retained `MeshService` boundary.
+- `AppStateStore` continues to bridge the compatibility-sensitive transport
+  implementation into observable application state.
+
+## Retained transport data flow
 
 ```text
 MainActivity / ChatViewModel                 MeshForegroundService
@@ -51,26 +78,20 @@ MainActivity / ChatViewModel                 MeshForegroundService
   derivation, Noise identity binding, signing, verification, duplicate
   suppression, and store-forward rules form the compatibility-sensitive core.
 
-## Reliability-first implementation plan
+## Reliability-first checkpoints
 
-1. **Checkpoint 01 — golden local text slice:** protect protocol boundaries with
-   tests, retain BLE discovery/GATT/relay behavior, and prove two-peer local text
-   delivery without redesigning transport state machines.
-2. **Checkpoint 02 — capability and optional transport policy:** make Wi-Fi Aware
-   an automatic capability-gated acceleration path with BLE fallback and a
-   stable peer/session identity across transports.
-3. **Checkpoint 03 — security and lifecycle hardening:** verify identity
-   persistence, authenticated private messaging, deduplication, foreground
-   lifecycle, permissions, reconnects, and process restart behavior.
-4. **Checkpoint 04 — product-surface reduction:** isolate or disable Nostr,
-   geohash, Tor, hotspot sharing, media/voice, and other non-v0.1 features
-   without deleting compatibility-sensitive internals prematurely.
-5. **Checkpoint 05 — UI integration:** port the reserved Gemini UI into native
-   Compose only after the mesh core is green; UI state must consume stable
-   service/repository contracts rather than own transport logic.
-6. **Checkpoint 06 — release evidence:** run the full automated matrix, lint,
-   assemble, and available multi-device tests; document every unavailable
-   physical scenario as `NOT PHYSICALLY VERIFIED`.
+0. **Checkpoint 00 — upstream build baseline:** pin and document the untouched
+   upstream source and toolchain.
+1. **Checkpoint 01 — golden local text slice:** protect protocol boundaries,
+   retain BLE discovery/GATT/relay behavior, and prove two-phone local text and
+   restart recovery without redesigning transport state machines.
+2. **Checkpoint 02 — reliable chat domain:** add the thin StealthMesh state,
+   repository, ViewModel, and functional Compose chat shell, then revalidate the
+   two-phone BLE Golden Path through the integrated product surface.
+
+Later checkpoints remain paused for the v0.1-alpha release preparation. Private
+conversation work, optional transport acceleration, premium UI integration, and
+additional hardening are roadmap items rather than current product claims.
 
 The untracked `ui/` design drop is reserved for Checkpoint 05 and is deliberately
 untouched at this baseline.

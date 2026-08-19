@@ -74,3 +74,14 @@ tools/arti-build/target/
 
 # JVM heap dumps (a Gradle daemon OOM drops these in the repo root)
 *.hprof
+
+# Local StealthMesh design drop and private physical-device evidence
+/ui/
+/mesh-evidence/
+/mesh-lab-evidence/
+*.logcat
+
+# Local environment files (a synthetic template may remain tracked)
+.env
+.env.*
+!.env.example

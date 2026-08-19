@@ -94,3 +94,48 @@ Private raw evidence remains in OS temporary storage and is uncommitted. This
 debug-harness result does not cover three-hop relay, Wi-Fi Aware, permission
 denial, doze/endurance, release APK behavior, OEM diversity, or cross-client
 compatibility.
+
+## Checkpoint 02 — reliable chat domain
+
+Date: 2026-08-20
+
+Baseline: `checkpoint-01-ble-golden-path`
+
+Build: Checkpoint 02 ARM64 debug APK with the StealthMesh state, repository,
+ViewModel, and Compose chat shell integrated. The production BLE/mesh core was
+not redesigned or refactored for this checkpoint.
+
+### Automated results
+
+| Check | Result | Evidence |
+|---|---|---|
+| Focused StealthMesh and Checkpoint 01 tests | PASS | 11 tests |
+| `:app:assembleDebug` | PASS | Debug APKs produced |
+| New `stealthmesh` package lint inspection | PASS | No finding in the new package |
+| Full inherited unit suite (recorded once) | FAIL (inherited baseline) | 605 tests observed; 26 failed and 3 skipped |
+
+The full-suite failures were outside the new StealthMesh package and remained
+concentrated in the previously documented Windows/Robolectric SQLite,
+persistence, media, and Nostr-timeout areas. No production workaround was added
+to hide those inherited failures.
+
+### Physical integration results
+
+| Check | Result | Public assertion |
+|---|---|---|
+| Mutual BLE discovery and direct links | PASS | Each phone presented the other nearby participant |
+| Real Compose send A → B and B → A | PASS | Synthetic text appeared once on each receiving phone |
+| Local/remote timeline attribution | PASS | Compose message bubbles identified sent and received text correctly |
+| Process death and relaunch | PASS | Identity persisted and the direct link recovered automatically |
+| Post-recovery text A → B and B → A | PASS | Synthetic text again appeared exactly once in each tested direction |
+| Peer disappearance | PASS | The remaining phone returned to the no-peer mesh-active state after the retained stale-peer policy elapsed |
+| Reconnection | PASS | Both phones returned to one nearby peer after relaunch |
+| Temporary settings restoration | PASS | Test-only Bluetooth, Wi-Fi, awake, timeout, and lock settings were restored |
+
+The physical run used two authorized Android phones and synthetic messages.
+Hardware identifiers, ADB selectors, peer IDs, network metadata, screenshots,
+and raw logs are excluded. Raw evidence remains local and untracked.
+
+This checkpoint does not establish exhaustive multi-hop behavior, broad OEM
+compatibility, Wi-Fi Aware acceleration, a completed private-chat product flow,
+release-signing readiness, or an independent security audit.

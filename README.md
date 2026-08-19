@@ -1,105 +1,195 @@
-<img width="256" height="256" alt="icon_128x128@2x" src="https://github.com/user-attachments/assets/90133f83-b4f6-41c6-aab9-25d0859d2a47" />
+# StealthMesh
 
-## bitchat for Android
+Offline-first Android mesh messaging for nearby devices.
 
-A decentralized peer-to-peer messaging app with dual transport architecture: local Bluetooth mesh networks for offline communication and internet-based Nostr protocol for global reach. No accounts, no phone numbers, no central servers.
+StealthMesh is an Android messenger designed to let nearby phones discover one
+another and exchange public text without Internet connectivity or a centralized
+messaging server. The project adds a focused product, state, repository, and
+Compose UI layer over the proven open-source
+[bitchat Android](https://github.com/permissionlesstech/bitchat-android) local
+mesh transport.
 
-This is the Android implementation of bitchat, fully protocol-compatible with the [iOS version](https://github.com/permissionlesstech/bitchat) for cross-platform mesh communication.
+> **Release status:** `v0.1-alpha` is a developer alpha. It represents the
+> reliability-first Nearby Mesh text path that has been implemented and
+> physically verified; it is not the complete StealthMesh roadmap.
 
-[bitchat.free](http://bitchat.free)
+## Project goal
 
-[GitHub Releases](https://github.com/permissionlesstech/bitchat-android/releases)
+Offline mesh networking is complicated. StealthMesh aims to keep discovery,
+transport, recovery, and message-state details beneath a small interface that
+ordinary users can understand: see who is nearby, write a message, and keep the
+conversation usable through normal disconnects and app restarts.
 
-[<img alt="Get it on Google Play" height="60" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"/>](https://play.google.com/store/apps/details?id=com.bitchat.droid)
+The current StealthMesh layer is more than a visual reskin. It defines an
+immutable UI state model, maps the retained mesh state into product concepts,
+provides deterministic public-message presentation, and keeps Compose separate
+from transport implementation details.
 
-## See it in action
+## Current v0.1-alpha features
 
-<table>
-  <tr>
-    <th>Offline mesh conversation</th>
-    <th>Geohash globe picker</th>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/readme-mesh-chat.png" alt="Active four-peer Bitchat mesh conversation with an image, voice messages, and text messages" width="360"/></td>
-    <td><img src="docs/screenshots/readme-geohash-globe.png" alt="Bitchat geohash location picker showing the whole Earth and geohash grid" width="360"/></td>
-  </tr>
-</table>
+- Native Android application built with Kotlin and Jetpack Compose
+- Automatic nearby Bluetooth Low Energy discovery
+- Direct local communication without Internet access
+- No centralized messaging server required for local Nearby Mesh communication
+- One public Nearby Mesh text conversation
+- Nearby-peer and direct-link presentation
+- Bidirectional text communication
+- Deterministic timeline ordering and duplicate-free visible delivery in the
+  physically tested scenarios
+- Peer disappearance and automatic reconnection handling
+- Process termination/relaunch recovery with identity preservation in the
+  physically tested scenarios
+- A thin repository, ViewModel, immutable state, and Compose chat shell
+- Background mesh lifetime inherited from the retained transport architecture
 
-## License
+## How it works
 
-This project is released into the public domain. See the [LICENSE](LICENSE.md) file for details.
-
-## Features
-
-- **Dual Transport Architecture**: Bluetooth LE mesh for offline messaging, Nostr relays for internet-based messaging
-- **Location-Based Channels**: Geographic chat rooms using geohash coordinates over Nostr relays
-- **Intelligent Message Routing**: Automatically chooses the best transport, with queuing and retry when a peer is unreachable
-- **End-to-End Encryption**: [Noise Protocol](https://noiseprotocol.org) (XX pattern, X25519 + ChaCha20-Poly1305) for private messages over the mesh
-- **Decentralized Mesh Network**: Automatic peer discovery and multi-hop relay over Bluetooth LE (max 7 hops)
-- **Wi-Fi Aware Transport**: Higher-bandwidth local mesh on supported devices
-- **Channel Chats**: Topic-based group messaging with optional password protection (Argon2id + AES-256-GCM)
-- **IRC-Style Commands**: Familiar `/join`, `/msg`, `/who` style interface
-- **Tor Support**: Built-in Tor (Arti) for private internet connectivity
-- **Emergency Wipe**: Triple-tap to instantly clear all data
-- **Cross-Platform**: Binary protocol compatible with bitchat on iOS and macOS
-
-## Technical Architecture
-
-### Bluetooth Mesh Network (Offline)
-
-- Direct peer-to-peer within Bluetooth range, multi-hop relay through nearby devices
-- Noise Protocol sessions with forward secrecy; peer identities derived from static keys
-- Compact binary packet format with fragmentation, TTL routing, and deduplication
-- Adaptive duty cycling and connection limits for battery efficiency
-- Foreground service keeps the mesh alive within Android background execution limits
-
-### Nostr Protocol (Internet)
-
-- Global reach via public relays, geohash-based location channels
-- Private messages fall back to Nostr for mutual favorites when the mesh is unavailable
-- Ephemeral keys per geohash area
-
-### Android Stack
-
-- Kotlin, Jetpack Compose (Material 3), MVVM
-- Coroutines and Flow for all networking and state
-- Core components: `MeshForegroundService` (persistent connectivity), `BluetoothMeshService` / `WifiAwareMeshService` (transports), `UnifiedMeshService` (transport selection), `NoiseSessionManager` (encryption sessions), `MessageRouter` (mesh/Nostr routing with outbox retry)
-
-## Building
-
-Requires Android Studio and the Android SDK (API 26+).
-
-```bash
-git clone https://github.com/permissionlesstech/bitchat-android.git
-cd bitchat-android
-./gradlew assembleDebug
+```text
+Phone A
+   ↕
+Bluetooth LE / local mesh transport
+   ↕
+Phone B
 ```
 
-Install on a connected device:
+For the verified Nearby Mesh path, the phones discover one another and exchange
+text locally over Bluetooth LE. No Internet connection is required.
 
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+## Architecture
+
+```mermaid
+flowchart TD
+    UI["StealthMeshScreen (Compose UI)"] --> VM[StealthMeshViewModel]
+    VM --> REPO[AppStateStealthMeshRepository]
+    REPO --> STORE[AppStateStore]
+    REPO --> MESH[Existing mesh services and protocol]
+    MESH --> BLE[Bluetooth LE]
+    MESH --> STORE
 ```
 
-The app requests Bluetooth, location (required for BLE scanning), and notification permissions at runtime.
+- `StealthMeshScreen` renders immutable state and forwards user actions.
+- `StealthMeshViewModel` owns draft/send UI state.
+- `AppStateStealthMeshRepository` maps existing peer and public-message state
+  into StealthMesh models and sends public text through the retained mesh API.
+- `AppStateStore` remains the observable bridge from the proven networking
+  implementation.
+- The compatibility-sensitive BLE, routing, packet, fragmentation,
+  deduplication, reconnect, and security internals remain inherited from the
+  upstream transport base.
 
-Release APKs and the Android App Bundle can be rebuilt byte-for-byte in the
-pinned Linux container. Maintainers should follow the
-[Android release guide](docs/maintainer-release-guide.md). See
-[Reproducible builds](docs/reproducible-builds.md) for the build trust model
-and public GitHub/Google Play verification procedures.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the retained transport boundaries and
+[UPSTREAM_BASE.md](UPSTREAM_BASE.md) for the exact upstream pin.
 
-## Testing
+## Reliability-first development
 
-```bash
-# Unit tests
-./gradlew test
+Development advances through protected, reviewable checkpoints:
 
-# Lint
-./gradlew lint
+| Checkpoint | Protected outcome |
+|---|---|
+| 00 | Pinned upstream build baseline |
+| 01 | Physical two-phone Bluetooth LE Golden Path |
+| 02 | StealthMesh chat/domain layer integrated and physically validated |
 
-# Instrumented tests (requires a device or emulator)
-./gradlew connectedAndroidTest
+`checkpoint-02-chat-core` is the known-good product baseline for this alpha.
+Feature work beyond it is intentionally paused during release preparation.
+
+## Physical-device verification
+
+Checkpoint 02 was exercised on two physical Android phones with synthetic test
+messages. The verified scenarios include:
+
+- mutual BLE discovery and direct links;
+- text from phone A to phone B and phone B to phone A;
+- exactly-once visible delivery within bounded tested scenarios;
+- process termination, relaunch, automatic direct-link recovery, and continued
+  bidirectional messaging;
+- peer identity preservation through the tested restart flow;
+- the real Compose composer, message bubbles, peer cards, and mesh status state;
+  and
+- peer disappearance followed by reconnection.
+
+Private device identifiers, raw logs, and Mesh Lab evidence are deliberately not
+published. Detailed sanitized results are in [TEST_REPORT.md](TEST_REPORT.md).
+
+## Build requirements
+
+- Git
+- Android Studio or a command-line Android SDK installation
+- JDK 21 (the repository pins `21.0.11` in `.java-version`)
+- Android SDK platform 37 and Build Tools 37.0.0
+- A physical Android device for meaningful BLE validation
+
+The app compiles with SDK 37, targets SDK 37, and supports Android API 26 and
+newer.
+
+## Build on Windows
+
+From the repository root:
+
+```powershell
+.\gradlew.bat assembleDebug
 ```
 
-Note that BLE mesh behavior is difficult to emulate; protocol and session logic is covered by unit tests, while radio-level behavior needs real devices.
+The universal developer APK is produced at:
+
+```text
+app/build/outputs/apk/debug/app-universal-debug.apk
+```
+
+The build also produces ABI-specific debug APKs in the same directory. These
+are debug/developer artifacts, not signed Play Store releases.
+
+## Install
+
+After enabling USB debugging and connecting an authorized device, the universal
+APK can be installed with:
+
+```powershell
+adb install -r app/build/outputs/apk/debug/app-universal-debug.apk
+```
+
+An APK may also be transferred to a compatible phone and installed manually,
+subject to that phone's install-source settings. Android requests the required
+Bluetooth and notification permissions at runtime.
+
+## Current limitations
+
+- This is an alpha release, not a production security-audited messenger.
+- The StealthMesh private-conversation product flow is not complete.
+- The reserved premium UI redesign has not been integrated.
+- Wi-Fi Aware acceleration is postponed and is not claimed as a completed
+  StealthMesh feature.
+- Full hardening, battery/endurance work, broader OEM coverage, and physical
+  multi-hop testing remain future work.
+- BLE behavior can vary by Android version and device manufacturer.
+- The retained upstream project has a documented Windows/Robolectric test
+  backlog outside the focused StealthMesh tests.
+
+## Roadmap
+
+- **v0.2:** private StealthMesh conversations and session-lifecycle validation
+- **v0.3:** integration of the reserved premium dark/light Compose design
+- **Later:** optional Wi-Fi Aware acceleration, additional hardening, deeper
+  battery tuning, broader physical-device coverage, and multi-hop validation
+
+No delivery dates are promised for roadmap items.
+
+## Open source and attribution
+
+StealthMesh is a modified Android project built on substantial networking and
+protocol work from
+[permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android),
+which is protocol-related to
+[permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat).
+The imported Android source is pinned and documented in
+[UPSTREAM_BASE.md](UPSTREAM_BASE.md).
+
+The repository preserves the upstream [GNU General Public License version 3](LICENSE.md)
+text and attribution. The upstream README and license text historically used
+conflicting public-domain/GPL language; until clarified upstream, StealthMesh
+treats the retained code as GPL-3.0-covered. This is an engineering record, not
+legal advice.
+
+## Release notes
+
+See [RELEASE_NOTES_v0.1-alpha.md](RELEASE_NOTES_v0.1-alpha.md).
