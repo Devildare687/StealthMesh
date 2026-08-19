@@ -50,3 +50,47 @@ scan/advertise, GATT connect, two-device text delivery, multi-hop relay, Wi-Fi
 Aware promotion/fallback, reconnect, background operation, restart, permissions,
 and OEM-specific behavior remain open acceptance work. This report makes no
 claim about those scenarios.
+
+## Checkpoint 01 — BLE Golden Path
+
+Date: 2026-08-20
+
+Build: current-tree ARM64 debug APK
+
+Topology: two authorized physical Android phones, phone A ↔ phone B. Device
+selectors, hardware identifiers, peer IDs, addresses, and raw logs are excluded
+from this report.
+
+### Results
+
+| Check | Result | Remote assertion |
+|---|---|---|
+| ADB preflight | PASS | Exactly two authorized physical API 36 phones; no emulator |
+| `:app:assembleDebug` | PASS | Debug APK compiled with the pinned toolchain |
+| Controlled-peer inspection | PASS | Each phone discovered only the other lab participant |
+| `ble_golden_path` | PASS | Wi-Fi disabled; mutual BLE discovery/direct state; text A→B and B→A exactly once |
+| Automatic recovery | PASS | After phone B process death/relaunch, identity persisted and direct BLE recovered without an explicit connect command |
+| Post-recovery text | PASS | Text A→B and B→A again arrived exactly once |
+| Live UI semantics | PASS | Both foreground UIs reported one connected peer, matching one direct peer in mesh state |
+| `dm` | PASS | Noise handshake and encrypted content-matched round trips in both directions |
+| `session_recovery` (clean isolated run) | PASS | Identity/session recovery and bidirectional encrypted DMs after process death |
+| Temporary device settings restoration | PASS | Bluetooth, Wi-Fi, stay-awake, screen timeout, and lock-screen settings match recorded originals |
+| Release-gate Python tests | PASS | 15 tests |
+
+The first `session_recovery` attempt followed `ble_golden_path` and `dm` on an
+evolving device state and timed out on the first recovered A→B encrypted DM,
+despite both sides reporting established sessions. Its failure evidence was
+preserved locally. A clean setup followed by an isolated `session_recovery`
+run passed. This is recorded as cross-scenario state contamination to revisit
+during Checkpoint 03; it does not weaken the clean BLE public-text recovery
+assertions above.
+
+The focused scenario uses unique synthetic messages and a bounded five-second
+post-receipt observation window to assert duplicate absence. The UI check uses
+accessibility semantics and the debug mesh-state probe; no screenshots were
+exported.
+
+Private raw evidence remains in OS temporary storage and is uncommitted. This
+debug-harness result does not cover three-hop relay, Wi-Fi Aware, permission
+denial, doze/endurance, release APK behavior, OEM diversity, or cross-client
+compatibility.

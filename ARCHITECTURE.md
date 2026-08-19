@@ -74,3 +74,24 @@ MainActivity / ChatViewModel                 MeshForegroundService
 
 The untracked `ui/` design drop is reserved for Checkpoint 05 and is deliberately
 untouched at this baseline.
+
+## Protected BLE Golden Path
+
+Checkpoint 01 establishes the following physically verified contract as a
+regression gate:
+
+1. Two physical phones start the debug app with required runtime permissions.
+2. With Wi-Fi disabled, BLE advertising/scanning produces mutual discovery and
+   a direct usable link.
+3. Public text is delivered exactly once in both directions.
+4. After one app process is killed and relaunched, its identity persists, the
+   direct BLE link recovers without a host-issued connect command, and
+   exactly-once text still works in both directions.
+5. The Compose UI state reports the same one-peer connected state as the
+   debug-only mesh state probe.
+
+The observable contract—not incidental implementation detail—is frozen.
+Changes to BLE discovery/GATT, peer lifecycle, message admission/deduplication,
+packet processing/relay, foreground lifecycle, or UI peer-state propagation
+must keep `ble_golden_path` green on two physical phones. The ADB command and
+message-count probes remain debug-only.

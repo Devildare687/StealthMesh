@@ -532,6 +532,91 @@ def scenario_broadcast(a: Device, b: Device) -> dict:
     return {"send": send_result, "recv": recv_result}
 
 
+def _public_message_exactly_once(sender: Device, receiver: Device, sender_id: str) -> dict:
+    token = f"golden-{uuid.uuid4().hex[:8]}"
+    content = f"stealthmesh {token}"
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        recv = pool.submit(receiver.cmd_ok, "msg_recv", 60_000, contains=token)
+        time.sleep(2)
+        send = pool.submit(sender.cmd_ok, "broadcast_msg", 30_000, content=content)
+        recv_result, send_result = recv.result(), send.result()
+    if recv_result.get("from") != sender_id or recv_result.get("content") != content:
+        raise MeshLabError(f"public message content or sender mismatch: {recv_result}")
+
+    # Duplicate delivery is a negative assertion and therefore needs a bounded
+    # observation window after the first remote receipt.
+    time.sleep(5)
+    count = receiver.cmd_ok("msg_count", content=content, peer=sender_id)
+    if count.get("count") != 1:
+        raise MeshLabError(f"public message was not delivered exactly once: {count}")
+    return {"send": send_result, "recv": recv_result, "count": count}
+
+
+def _wait_for_automatic_mutual_direct_link(
+    a: Device,
+    b: Device,
+    id_a: str,
+    id_b: str,
+    timeout_s: int = 120,
+) -> dict:
+    deadline = time.monotonic() + timeout_s
+    last_a: dict = {}
+    last_b: dict = {}
+    while time.monotonic() < deadline:
+        peers_a = a.cmd_ok("peers").get("peers", [])
+        peers_b = b.cmd_ok("peers").get("peers", [])
+        last_a = next((peer for peer in peers_a if peer.get("id") == id_b), {})
+        last_b = next((peer for peer in peers_b if peer.get("id") == id_a), {})
+        if last_a.get("direct") and last_b.get("direct"):
+            return {"a": last_a, "b": last_b}
+        a.cmd_ok("announce")
+        b.cmd_ok("announce")
+        time.sleep(3)
+    raise MeshLabError(
+        "BLE link did not recover automatically without an explicit connect: "
+        f"a={last_a} b={last_b}"
+    )
+
+
+def scenario_ble_golden_path(a: Device, b: Device) -> dict:
+    """Bidirectional exactly-once text and automatic BLE recovery after process death."""
+    id_a = whoami(a)["peer_id"]
+    id_b = whoami(b)["peer_id"]
+
+    wait_for_peer(a, id_b)
+    wait_for_peer(b, id_a)
+    ensure_direct_link(a, b, id_a, id_b)
+    initial_direct = _wait_for_automatic_mutual_direct_link(a, b, id_a, id_b, timeout_s=30)
+    baseline = {
+        "a_to_b": _public_message_exactly_once(a, b, id_a),
+        "b_to_a": _public_message_exactly_once(b, a, id_b),
+    }
+
+    b.force_stop()
+    b.wake()
+    b.launch()
+    b.cmd_ok("start")
+    b.cmd_ok("set_nickname", name="bob")
+    if whoami(b)["peer_id"] != id_b:
+        raise MeshLabError("identity changed across process death")
+
+    wait_for_peer(a, id_b, timeout_s=120)
+    wait_for_peer(b, id_a, timeout_s=120)
+    recovered_direct = _wait_for_automatic_mutual_direct_link(a, b, id_a, id_b)
+    recovered = {
+        "a_to_b": _public_message_exactly_once(a, b, id_a),
+        "b_to_a": _public_message_exactly_once(b, a, id_b),
+    }
+    return {
+        "mutual_discovery": True,
+        "initial_direct": initial_direct,
+        "baseline": baseline,
+        "identity_preserved": True,
+        "automatic_direct_recovery": recovered_direct,
+        "recovered": recovered,
+    }
+
+
 def _ptt_one_way(
     sender: Device,
     receiver: Device,
@@ -869,6 +954,7 @@ SCENARIOS = {
     "dm": scenario_dm,
     "favorite_verification": scenario_favorite_verification,
     "broadcast": scenario_broadcast,
+    "ble_golden_path": scenario_ble_golden_path,
     "ptt_dm": scenario_ptt_dm,
     "ptt_broadcast": scenario_ptt_broadcast,
     # Broadcast transfers are receiver-capped at 256 fragments (~120 KB); only

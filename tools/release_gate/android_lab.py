@@ -32,14 +32,16 @@ APPLICATION_ID = "com.bitchat.droid"
 
 
 def find_adb() -> str:
-    direct = shutil.which("adb")
-    if direct:
-        return direct
+    for executable in ("adb", "adb.exe"):
+        direct = shutil.which(executable)
+        if direct:
+            return direct
     android_home = os.environ.get("ANDROID_HOME")
     if android_home:
-        candidate = Path(android_home) / "platform-tools" / "adb"
-        if candidate.is_file():
-            return str(candidate)
+        for executable in ("adb", "adb.exe"):
+            candidate = Path(android_home) / "platform-tools" / executable
+            if candidate.is_file():
+                return str(candidate)
     raise GateError("adb was not found; set ANDROID_HOME or add adb to PATH")
 
 

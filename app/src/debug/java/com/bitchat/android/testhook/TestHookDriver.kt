@@ -71,6 +71,7 @@ object TestHookDriver {
             "dm_send" -> dmSend(context, intent.requiredString("peer"), intent.requiredString("content"), intent.getStringExtra("msg_id"))
             "dm_recv" -> dmRecv(context, intent)
             "msg_recv" -> msgRecv(context, intent)
+            "msg_count" -> msgCount(context, intent)
             "favorite_set" -> favoriteSet(
                 context,
                 intent.requiredString("peer"),
@@ -298,6 +299,29 @@ object TestHookDriver {
             .put("content", found.content)
             .put("channel", found.channel)
             .put("msg_id", found.id)
+    }
+
+    private fun msgCount(context: Context, intent: Intent): JSONObject {
+        val expectedContent = intent.requiredString("content")
+        val fromPeer = intent.getStringExtra("peer")
+        val channel = intent.getStringExtra("channel")
+        val mesh = mesh(context)
+        val messages = if (channel != null) {
+            AppStateStore.channelMessages.value.values.flatten()
+        } else {
+            AppStateStore.publicMessages.value
+        }
+        val count = messages.count { message ->
+            message.senderPeerID != mesh.myPeerID &&
+                message.content == expectedContent &&
+                (fromPeer == null || message.senderPeerID == fromPeer) &&
+                (channel == null || message.channel == channel)
+        }
+        return ok("msg_count")
+            .put("content", expectedContent)
+            .put("peer", fromPeer)
+            .put("channel", channel)
+            .put("count", count)
     }
 
     // MARK: - Favorite and verification state

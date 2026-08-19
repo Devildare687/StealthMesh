@@ -99,6 +99,17 @@ class ReleaseGateTest(unittest.TestCase):
     def setUp(self):
         self.manifest = load_json(TOOL_DIRECTORY / "scenarios.json")
 
+    @mock.patch("tools.release_gate.android_lab.shutil.which", return_value=None)
+    def test_find_adb_accepts_windows_executable_from_android_home(self, _which):
+        with tempfile.TemporaryDirectory() as directory:
+            android_home = Path(directory)
+            platform_tools = android_home / "platform-tools"
+            platform_tools.mkdir()
+            adb = platform_tools / "adb.exe"
+            adb.touch()
+            with mock.patch.dict(android_lab.os.environ, {"ANDROID_HOME": str(android_home)}):
+                self.assertEqual(str(adb), android_lab.find_adb())
+
     def test_manifest_covers_every_release_category(self):
         scenarios = validate_manifest(self.manifest)
         self.assertEqual(27, len(scenarios))
