@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
 import com.bitchat.android.mesh.BluetoothMeshService
@@ -39,10 +39,12 @@ import com.bitchat.android.onboarding.OnboardingCoordinator
 import com.bitchat.android.onboarding.OnboardingState
 import com.bitchat.android.onboarding.PermissionExplanationScreen
 import com.bitchat.android.onboarding.PermissionManager
-import com.bitchat.android.ui.ChatScreen
 import com.bitchat.android.ui.ChatViewModel
 import com.bitchat.android.ui.OrientationAwareActivity
 import com.bitchat.android.ui.theme.BitchatTheme
+import com.bitchat.android.stealthmesh.AppStateStealthMeshRepository
+import com.bitchat.android.stealthmesh.StealthMeshScreen
+import com.bitchat.android.stealthmesh.StealthMeshViewModel
 import com.bitchat.android.wifiaware.WifiAwareController
 import com.bitchat.android.nostr.PoWPreferenceManager
 import com.bitchat.android.services.VerificationService
@@ -67,6 +69,20 @@ class MainActivity : OrientationAwareActivity() {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
                 return ChatViewModel(application, meshService, unifiedMeshService) as T
+            }
+        }
+    }
+    private val stealthMeshViewModel: StealthMeshViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(
+                modelClass: Class<T>,
+                extras: androidx.lifecycle.viewmodel.CreationExtras
+            ): T {
+                @Suppress("UNCHECKED_CAST")
+                return StealthMeshViewModel(
+                    repository = AppStateStealthMeshRepository(unifiedMeshService),
+                    savedStateHandle = extras.createSavedStateHandle()
+                ) as T
             }
         }
     }
@@ -312,25 +328,15 @@ class MainActivity : OrientationAwareActivity() {
                 )
             }
 
-            OnboardingState.CHECKING, OnboardingState.INITIALIZING, OnboardingState.COMPLETE -> {
-                // Set up back navigation handling for the chat screen
-                val backCallback = object : OnBackPressedCallback(true) {
-                    override fun handleOnBackPressed() {
-                        // Let ChatViewModel handle navigation state
-                        val handled = chatViewModel.handleBackPressed()
-                        if (!handled) {
-                            // If ChatViewModel doesn't handle it, disable this callback
-                            // and let the system handle it (which will exit the app)
-                            this.isEnabled = false
-                            onBackPressedDispatcher.onBackPressed()
-                            this.isEnabled = true
-                        }
-                    }
-                }
+            OnboardingState.CHECKING, OnboardingState.INITIALIZING -> {
+                InitializingScreen(modifier)
+            }
 
-                // Add the callback - this will be automatically removed when the activity is destroyed
-                onBackPressedDispatcher.addCallback(this, backCallback)
-                ChatScreen(viewModel = chatViewModel)
+            OnboardingState.COMPLETE -> {
+                StealthMeshScreen(
+                    viewModel = stealthMeshViewModel,
+                    modifier = modifier
+                )
             }
             
             OnboardingState.ERROR -> {
@@ -355,11 +361,22 @@ class MainActivity : OrientationAwareActivity() {
             OnboardingState.COMPLETE -> {
                 // App is fully initialized, mesh service is running
                 android.util.Log.i("MainActivity", "Onboarding completed - app ready")
+                stealthMeshViewModel.onMeshRunning()
             }
             OnboardingState.ERROR -> {
                 android.util.Log.e("MainActivity", "Onboarding error state reached")
+                stealthMeshViewModel.onError(
+                    mainViewModel.errorMessage.value.ifBlank { "Mesh could not start" }
+                )
             }
-            else -> {}
+            OnboardingState.BLUETOOTH_CHECK -> stealthMeshViewModel.onBluetoothOff()
+            OnboardingState.PERMISSION_EXPLANATION,
+            OnboardingState.PERMISSION_REQUESTING,
+            OnboardingState.BACKGROUND_LOCATION_EXPLANATION -> stealthMeshViewModel.onPermissionRequired()
+            OnboardingState.CHECKING,
+            OnboardingState.INITIALIZING,
+            OnboardingState.LOCATION_CHECK,
+            OnboardingState.BATTERY_OPTIMIZATION_CHECK -> stealthMeshViewModel.onStarting()
         }
     }
     
@@ -679,6 +696,7 @@ class MainActivity : OrientationAwareActivity() {
     private fun initializeApp() {
         lifecycleScope.launch {
             try {
+                stealthMeshViewModel.onStarting()
                 // Initialize the app with a proper delay to ensure Bluetooth stack is ready
                 // This solves the issue where app needs restart to work on first install
                 delay(1000) // Give the system time to process permission grants
@@ -751,6 +769,7 @@ class MainActivity : OrientationAwareActivity() {
 
         // Check Bluetooth and Location status on resume and handle accordingly
         if (mainViewModel.onboardingState.value == OnboardingState.COMPLETE) {
+            stealthMeshViewModel.onRecovering()
             // Reattach mesh delegate to new ChatViewModel instance after Activity recreation
             try { unifiedMeshService.delegate = chatViewModel } catch (_: Exception) { }
 
@@ -762,6 +781,7 @@ class MainActivity : OrientationAwareActivity() {
                 mainViewModel.updateBluetoothStatus(currentBluetoothStatus)
                 mainViewModel.updateOnboardingState(OnboardingState.BLUETOOTH_CHECK)
                 mainViewModel.updateBluetoothLoading(false)
+                stealthMeshViewModel.onBluetoothOff()
                 return
             }
             
@@ -775,6 +795,7 @@ class MainActivity : OrientationAwareActivity() {
             } else {
                 // If location is enabled, ensure Wi-Fi Aware starts if it was blocked by location earlier
                 com.bitchat.android.wifiaware.WifiAwareController.startIfPossible()
+                stealthMeshViewModel.onMeshRunning()
             }
         }
     }
