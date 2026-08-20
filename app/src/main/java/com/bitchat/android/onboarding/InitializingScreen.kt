@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.bitchat.android.ui.theme.BitchatFontFamily
 import com.bitchat.android.R
@@ -59,6 +60,20 @@ fun InitializingScreen(modifier: Modifier) {
             verticalArrangement = Arrangement.spacedBy(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Surface(
+                modifier = Modifier.size(96.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+                color = Color.Black,
+                shadowElevation = 6.dp
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.stealthmesh_mark),
+                    contentDescription = stringResource(R.string.stealthmesh_logo_description),
+                    tint = Color.White,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
             // App title
             Text(
                 text = stringResource(R.string.app_name),
