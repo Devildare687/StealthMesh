@@ -82,7 +82,7 @@ fun InitializingScreen(modifier: Modifier) {
                 modifier = Modifier
                     .size(48.dp)
                     .rotate(rotation),
-                color = colors.primary,
+                color = StealthMeshAccent,
                 strokeWidth = 3.dp
             )
 
@@ -162,7 +162,7 @@ fun InitializationErrorScreen(
                 onClick = onRetry,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
             ) {
                 Text("Try the wake-up again", fontFamily = StealthMeshDisplayFont, fontWeight = FontWeight.Bold)
             }
