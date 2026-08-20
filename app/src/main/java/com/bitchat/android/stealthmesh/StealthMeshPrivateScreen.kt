@@ -139,6 +139,7 @@ internal fun StealthMeshPrivateScreen(
             }
             PrivateConversation(
                 messages = state.privateMessages,
+                sessionState = state.privateSessionState,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -185,6 +186,7 @@ private fun PrivateSessionSummary(state: PrivateSessionState) {
 @Composable
 private fun PrivateConversation(
     messages: List<PrivateChatMessage>,
+    sessionState: PrivateSessionState,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -193,6 +195,7 @@ private fun PrivateConversation(
     }
 
     if (messages.isEmpty()) {
+        val emptyCopy = sessionState.toPrivateEmptyStateCopy()
         Box(
             modifier
                 .fillMaxSize()
@@ -208,15 +211,15 @@ private fun PrivateConversation(
                     modifier = Modifier.padding(22.dp),
                     verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
-                    StealthMeshBadge("Private")
+                    StealthMeshBadge(emptyCopy.badge)
                     Text(
-                        "A secure session is getting ready.",
+                        emptyCopy.title,
                         fontFamily = StealthMeshChatDisplayFont,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
                     Text(
-                        "Once the direct encrypted link is ready, your messages will show up here.",
+                        emptyCopy.body,
                         fontFamily = StealthMeshChatDisplayFont,
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
@@ -371,6 +374,40 @@ private data class PrivateStatusVisual(
     val label: String,
     val tone: PrivateStatusTone = PrivateStatusTone.Neutral
 )
+
+private data class PrivateEmptyStateCopy(
+    val badge: String,
+    val title: String,
+    val body: String
+)
+
+private fun PrivateSessionState.toPrivateEmptyStateCopy(): PrivateEmptyStateCopy = when (this) {
+    PrivateSessionState.Encrypted -> PrivateEmptyStateCopy(
+        badge = "Ready",
+        title = "Private line is ready.",
+        body = "Only the two of you are in here. Say something suspiciously normal."
+    )
+    PrivateSessionState.Establishing -> PrivateEmptyStateCopy(
+        badge = "Securing",
+        title = "Locking things down.",
+        body = "Building the encrypted direct link. This should be quick."
+    )
+    PrivateSessionState.Reconnecting -> PrivateEmptyStateCopy(
+        badge = "Retrying",
+        title = "Finding your private line again.",
+        body = "The encrypted link blinked for a sec. Keeping both devices nearby helps."
+    )
+    PrivateSessionState.Unavailable -> PrivateEmptyStateCopy(
+        badge = "Offline",
+        title = "Private line is taking a break.",
+        body = "Keep the other device nearby and StealthMesh will keep trying."
+    )
+    is PrivateSessionState.Error -> PrivateEmptyStateCopy(
+        badge = "Oops",
+        title = "Private line hit a snag.",
+        body = "Give it a moment and try again. Your public Nearby Mesh can keep running meanwhile."
+    )
+}
 
 private fun PrivateSessionState.toPrivateStatusVisual(): PrivateStatusVisual = when (this) {
     PrivateSessionState.Establishing -> PrivateStatusVisual("Securing direct link")
