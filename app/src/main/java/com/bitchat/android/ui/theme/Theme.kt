@@ -36,8 +36,8 @@ internal val DarkBitchatColorScheme = darkColorScheme(
     onSurface = Color(0xFFF5F5F5),
     surfaceVariant = Color(0xFF182118),
     onSurfaceVariant = Color(0xFF9AA69A),
-    outline = Color(0xFF2A3A2A),
-    outlineVariant = Color(0xFF1C271C),
+    outline = Color(0xFF34343C),
+    outlineVariant = Color(0xFF202027),
     error = Color(0xFFFF453A),
     onError = Color.Black
 )
@@ -59,8 +59,8 @@ internal val LightBitchatColorScheme = lightColorScheme(
     onSurface = Color(0xFF131A13),
     surfaceVariant = Color(0xFFE7EDE7),
     onSurfaceVariant = Color(0xFF4C574C),
-    outline = Color(0xFFCBD6CB),
-    outlineVariant = Color(0xFFDEE6DE),
+    outline = Color(0xFFD3D3DC),
+    outlineVariant = Color(0xFFE6E6EC),
     error = Color(0xFFD70015),
     onError = Color.White
 )
