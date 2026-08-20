@@ -9,8 +9,8 @@ Compose UI layer over the proven open-source
 [bitchat Android](https://github.com/permissionlesstech/bitchat-android) local
 mesh transport.
 
-> **Release status:** `v0.1-alpha` is a developer alpha. It represents the
-> reliability-first Nearby Mesh text path that has been implemented and
+> **Release status:** `v0.2-alpha` is a developer alpha. It represents the
+> reliability-first Nearby Mesh public and private text paths that have been
 > physically verified; it is not the complete StealthMesh roadmap.
 
 ## Project goal
@@ -22,10 +22,10 @@ conversation usable through normal disconnects and app restarts.
 
 The current StealthMesh layer is more than a visual reskin. It defines an
 immutable UI state model, maps the retained mesh state into product concepts,
-provides deterministic public-message presentation, and keeps Compose separate
-from transport implementation details.
+provides deterministic public/private message presentation, reports real secure
+session state, and keeps Compose separate from transport implementation details.
 
-## Current v0.1-alpha features
+## Current v0.2-alpha features
 
 - Native Android application built with Kotlin and Jetpack Compose
 - Automatic nearby Bluetooth Low Energy discovery
@@ -33,6 +33,10 @@ from transport implementation details.
 - No centralized messaging server required for local Nearby Mesh communication
 - One public Nearby Mesh text conversation
 - Nearby-peer and direct-link presentation
+- Private peer-to-peer text conversations opened from nearby people
+- Inherited Noise secure-session protection for verified private conversations
+- Honest private-session states: establishing, encrypted, reconnecting,
+  unavailable, and error
 - Bidirectional text communication
 - Deterministic timeline ordering and duplicate-free visible delivery in the
   physically tested scenarios
@@ -53,7 +57,8 @@ Phone B
 ```
 
 For the verified Nearby Mesh path, the phones discover one another and exchange
-text locally over Bluetooth LE. No Internet connection is required.
+public text or private text protected by an established inherited Noise session
+locally over Bluetooth LE. No Internet connection is required.
 
 ## Architecture
 
@@ -68,9 +73,11 @@ flowchart TD
 ```
 
 - `StealthMeshScreen` renders immutable state and forwards user actions.
-- `StealthMeshViewModel` owns draft/send UI state.
-- `AppStateStealthMeshRepository` maps existing peer and public-message state
-  into StealthMesh models and sends public text through the retained mesh API.
+- `StealthMeshViewModel` owns public/private draft, selection, send, and session
+  presentation state.
+- `AppStateStealthMeshRepository` maps existing peer, public-message,
+  private-message, and real Noise session state into StealthMesh models and
+  sends text through the retained mesh API.
 - `AppStateStore` remains the observable bridge from the proven networking
   implementation.
 - The compatibility-sensitive BLE, routing, packet, fragmentation,
@@ -89,13 +96,14 @@ Development advances through protected, reviewable checkpoints:
 | 00 | Pinned upstream build baseline |
 | 01 | Physical two-phone Bluetooth LE Golden Path |
 | 02 | StealthMesh chat/domain layer integrated and physically validated |
+| 03 | Private StealthMesh text conversations and secure-session recovery physically validated |
 
-`checkpoint-02-chat-core` is the known-good product baseline for this alpha.
+`checkpoint-03-private-chat` is the known-good product baseline for this alpha.
 Feature work beyond it is intentionally paused during release preparation.
 
 ## Physical-device verification
 
-Checkpoint 02 was exercised on two physical Android phones with synthetic test
+Checkpoint 03 was exercised on two physical Android phones with synthetic test
 messages. The verified scenarios include:
 
 - mutual BLE discovery and direct links;
@@ -104,6 +112,13 @@ messages. The verified scenarios include:
 - process termination, relaunch, automatic direct-link recovery, and continued
   bidirectional messaging;
 - peer identity preservation through the tested restart flow;
+- real established Noise state on both private-conversation endpoints;
+- private text in both directions exactly once, before and after process
+  termination/relaunch;
+- public/private timeline separation;
+- private-session reconnection without an explicit handshake fallback;
+- the previously observed sequential-session contamination sequence, which did
+  not reproduce in the Checkpoint 03 acceptance run;
 - the real Compose composer, message bubbles, peer cards, and mesh status state;
   and
 - peer disappearance followed by reconnection.
@@ -155,7 +170,9 @@ Bluetooth and notification permissions at runtime.
 ## Current limitations
 
 - This is an alpha release, not a production security-audited messenger.
-- The StealthMesh private-conversation product flow is not complete.
+- Private StealthMesh conversations currently cover text on the tested
+  two-phone BLE topology; broader topology, attachment, and endurance coverage
+  remains future work.
 - The reserved premium UI redesign has not been integrated.
 - Wi-Fi Aware acceleration is postponed and is not claimed as a completed
   StealthMesh feature.
@@ -167,7 +184,6 @@ Bluetooth and notification permissions at runtime.
 
 ## Roadmap
 
-- **v0.2:** private StealthMesh conversations and session-lifecycle validation
 - **v0.3:** integration of the reserved premium dark/light Compose design
 - **Later:** optional Wi-Fi Aware acceleration, additional hardening, deeper
   battery tuning, broader physical-device coverage, and multi-hop validation
@@ -192,4 +208,5 @@ legal advice.
 
 ## Release notes
 
-See [RELEASE_NOTES_v0.1-alpha.md](RELEASE_NOTES_v0.1-alpha.md).
+See [RELEASE_NOTES_v0.2-alpha.md](RELEASE_NOTES_v0.2-alpha.md) and the preserved
+[v0.1-alpha notes](RELEASE_NOTES_v0.1-alpha.md).

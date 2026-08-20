@@ -1,6 +1,6 @@
 # StealthMesh backlog
 
-Items below are explicitly outside the v0.1 golden path. They are not permission
+Items below are explicitly outside the v0.2 protected baseline. They are not permission
 to change the protected protocol or transport state machines.
 
 - Investigate Nearby Connections as optional future transport abstraction

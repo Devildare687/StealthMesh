@@ -139,3 +139,49 @@ and raw logs are excluded. Raw evidence remains local and untracked.
 This checkpoint does not establish exhaustive multi-hop behavior, broad OEM
 compatibility, Wi-Fi Aware acceleration, a completed private-chat product flow,
 release-signing readiness, or an independent security audit.
+
+## Checkpoint 03 — private StealthMesh chat
+
+Date: 2026-08-20
+
+Baseline: `checkpoint-02-chat-core`
+
+Build: Checkpoint 03 debug APK with the thin StealthMesh private-conversation
+state, repository, ViewModel, and Compose shell. The protected production BLE,
+Noise, routing, packet, fragmentation, and shared persistence core was not
+redesigned or refactored for this checkpoint.
+
+### Automated results
+
+| Check | Result | Evidence |
+|---|---|---|
+| Focused StealthMesh Checkpoint 02 + 03 tests | PASS | 21 tests; 0 failures, 0 errors, 0 skipped |
+| `:app:assembleDebug` | PASS | ABI-specific and universal debug APKs produced |
+| Release-gate Python tests | PASS | 17 tests |
+| Protected networking-core diff | PASS | No Checkpoint 03 change in the protected BLE/Noise/routing core |
+
+### Physical private-chat results
+
+| Check | Result | Private assertion |
+|---|---|---|
+| Controlled BLE-only topology | PASS | Each authorized phone discovered exactly the other lab participant with Wi-Fi disabled |
+| Nearby person → private conversation | PASS | The real Compose private screen opened from the nearby-peer card on both phones |
+| Noise session truthfulness | PASS | `Encrypted` appeared only while the inherited Noise state was established on both endpoints |
+| Private text A → B and B → A | PASS | Synthetic text rendered and persisted exactly once in both directions |
+| Public/private separation | PASS | Private text never appeared in Nearby Mesh; public text never appeared in private chat |
+| Process death and relaunch | PASS | Peer identity persisted and the direct BLE relationship recovered |
+| Recovered private sessions | PASS | Both endpoints returned to established Noise state without an explicit handshake fallback |
+| Post-recovery private text | PASS | Synthetic text again rendered and persisted exactly once in both directions |
+| Sequential-session contamination | PASS | The prior public → private → process-recovery sequence did not reproduce the earlier contamination observation |
+| Temporary settings restoration | PASS | Bluetooth, Wi-Fi, stay-awake, timeout, and lock settings matched recorded originals in two checks |
+
+The run used synthetic messages and accessibility semantics against the actual
+Compose UI. Test-hook assertions independently checked the real Noise state and
+durable public/private stores. Early harness-only ordering and input-timing
+issues were corrected without changing the protected production networking
+core; the clean acceptance run passed the complete sequence.
+
+Private hardware identifiers, ADB selectors, peer IDs, network metadata,
+screenshots, raw logs, and Mesh Lab evidence remain local and untracked. This
+checkpoint is not an independent security audit and does not establish broad
+OEM, multi-hop, endurance, attachment, or production-release coverage.

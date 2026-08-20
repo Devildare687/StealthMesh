@@ -26,9 +26,11 @@ AppStateStealthMeshRepository -------> MeshService send API
 
 - `StealthMeshScreen` renders immutable `StealthMeshUiState` and forwards draft
   and send actions.
-- `StealthMeshViewModel` combines repository state with saved draft state.
+- `StealthMeshViewModel` combines repository state with saved public/private
+  drafts and the selected private-conversation target.
 - `AppStateStealthMeshRepository` maps peers, direct links, nicknames, signal
-  strength, and public messages from `AppStateStore` into product models. Public
+  strength, public/private messages, and real Noise session state from
+  `AppStateStore` and `MeshService` into product models. Public and private
   sends use the retained `MeshService` boundary.
 - `AppStateStore` continues to bridge the compatibility-sensitive transport
   implementation into observable application state.
@@ -68,7 +70,7 @@ MainActivity / ChatViewModel                 MeshForegroundService
 - `TransportBridgeService` bridges registered transports, decrements relay TTL,
   and suppresses duplicates without changing the binary protocol.
 - `MessageRouter` currently chooses an authenticated local mesh route, a Nostr
-  fallback, or a bounded retry queue. Nostr is outside the StealthMesh v0.1
+  fallback, or a bounded retry queue. Nostr is outside the StealthMesh v0.2
   golden path and will be isolated only after local transport behavior is
   protected by tests.
 - `NoiseEncryptionService` / `NoiseSessionManager` establish per-peer Noise
@@ -88,10 +90,14 @@ MainActivity / ChatViewModel                 MeshForegroundService
 2. **Checkpoint 02 — reliable chat domain:** add the thin StealthMesh state,
    repository, ViewModel, and functional Compose chat shell, then revalidate the
    two-phone BLE Golden Path through the integrated product surface.
+3. **Checkpoint 03 — private StealthMesh chat:** expose the inherited per-peer
+   Noise state through the thin product layer, add isolated private text
+   conversations, and physically validate exactly-once delivery and recovery.
 
-Later checkpoints remain paused for the v0.1-alpha release preparation. Private
-conversation work, optional transport acceleration, premium UI integration, and
-additional hardening are roadmap items rather than current product claims.
+Later checkpoints remain paused for the v0.2-alpha release preparation.
+Optional transport acceleration, premium UI integration, broader private-media
+coverage, and additional hardening are roadmap items rather than current
+product claims.
 
 The untracked `ui/` design drop is reserved for Checkpoint 05 and is deliberately
 untouched at this baseline.
