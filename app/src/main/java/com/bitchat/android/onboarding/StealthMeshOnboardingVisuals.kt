@@ -28,6 +28,8 @@ import com.bitchat.android.R
 
 internal val StealthMeshDisplayFont = FontFamily.SansSerif
 internal val StealthMeshCodeFont = FontFamily.Monospace
+internal val StealthMeshAccent = Color(0xFF8B7CFF)
+internal val StealthMeshAccentSoft = Color(0x228B7CFF)
 
 @Composable
 internal fun StealthMeshMark(
@@ -67,7 +69,7 @@ internal fun StealthMeshHeader(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = eyebrow.uppercase(),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = StealthMeshAccent,
                     fontFamily = StealthMeshCodeFont,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -112,7 +114,7 @@ internal fun StealthMeshAccessBadge(
     Box(
         modifier = modifier
             .background(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                color = StealthMeshAccentSoft,
                 shape = RoundedCornerShape(10.dp)
             )
             .padding(horizontal = 10.dp, vertical = 7.dp),
@@ -120,7 +122,7 @@ internal fun StealthMeshAccessBadge(
     ) {
         Text(
             text = label,
-            color = MaterialTheme.colorScheme.primary,
+            color = StealthMeshAccent,
             fontFamily = StealthMeshCodeFont,
             fontWeight = FontWeight.Bold,
             fontSize = 10.sp,
