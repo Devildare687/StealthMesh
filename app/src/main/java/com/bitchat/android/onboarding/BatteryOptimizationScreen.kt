@@ -120,7 +120,7 @@ private fun BatteryOptimizationEnabledContent(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -159,7 +159,7 @@ private fun BatteryOptimizationEnabledContent(
                     modifier = Modifier.weight(1f),
                     enabled = !isLoading
                 ) {
-                    Text("Skip it", fontFamily = StealthMeshDisplayFont)
+                    Text("Skip it", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
                 }
             }
         }
@@ -188,7 +188,7 @@ private fun BatteryOptimizationCheckingContent(colorScheme: ColorScheme) {
         Spacer(modifier = Modifier.height(28.dp))
         CircularProgressIndicator(
             modifier = Modifier.size(48.dp).rotate(rotation),
-            color = colorScheme.primary,
+            color = StealthMeshAccent,
             strokeWidth = 3.dp
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -231,7 +231,8 @@ private fun BatteryOptimizationNotSupportedContent(
         Button(
             onClick = onRetry,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
         ) {
             Text("Continue", fontFamily = StealthMeshDisplayFont)
         }
