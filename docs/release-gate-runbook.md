@@ -307,6 +307,7 @@ python3 tools/release_gate/mesh_lab.py scenario all \
 | `media_private` | private-chat contact ID resolves to the live mesh peer; voice, image, and generic-file digests match |
 | `raw` | raw packet injection is accepted by the mesh |
 | `session_recovery` | force-stop B mid-session: identity persists, re-handshake, DMs flow again |
+| `checkpoint03_private_ui` | public regression plus real Compose private-chat selection, Noise status, bidirectional text, separation, exactly-once display, and process recovery |
 | `identity_reset` | pm clear B mid-session: new identity, rediscovery, handshake, DMs |
 | `all` | every scenario above in sequence |
 
@@ -328,7 +329,7 @@ python3 tools/release_gate/mesh_lab.py cmd --serial <serial> state   # full mesh
 See `TestHookDriver.kt` for the full command set (`ping`, `start`, `stop`,
 `whoami`, `set_nickname`, `scan`, `peers`, `connect`, `handshake`, `session`,
 `announce`, `broadcast_msg`, `dm_send`, `dm_recv`, `msg_recv`, `msg_count`, `favorite_set`,
-`favorite_status`, `verification_set`, `verification_status`, `file_send`,
+`favorite_status`, `verification_set`, `verification_status`, `private_count`, `file_send`,
 `file_recv`, `file_cancel`, `ptt_send`, `ptt_recv`, `raw_send`, `ble`, `state`,
 `clear_results`).
 

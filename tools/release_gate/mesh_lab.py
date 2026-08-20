@@ -24,12 +24,14 @@ import concurrent.futures
 import hashlib
 import json
 import random
+import re
 import shlex
 import subprocess
 import sys
 import tempfile
 import time
 import uuid
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -74,6 +76,25 @@ class MeshLabError(Exception):
 
 def _shell(serial: str, command: str) -> str:
     return run_adb(serial, ["shell", command])
+
+
+def ui_bounds(xml: str, attribute: str, expected: str) -> tuple[int, int] | None:
+    """Return the center of the first visible UI node whose attribute contains expected."""
+    start = xml.find("<?xml")
+    if start >= 0:
+        xml = xml[start:]
+    try:
+        root = ET.fromstring(xml)
+    except ET.ParseError:
+        return None
+    for node in root.iter("node"):
+        if expected not in node.attrib.get(attribute, ""):
+            continue
+        match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+        if match:
+            left, top, right, bottom = map(int, match.groups())
+            return ((left + right) // 2, (top + bottom) // 2)
+    return None
 
 
 class Device:
@@ -262,6 +283,73 @@ class Device:
 
     def logcat_dump(self, lines: int = 200) -> str:
         return _shell(self.serial, f"logcat -d -t {lines}")
+
+    # -- foreground Compose UI ----------------------------------------------
+
+    def ui_dump(self) -> str:
+        path = "/data/local/tmp/stealthmesh-window.xml"
+        _shell(self.serial, f"uiautomator dump {path} >/dev/null")
+        return _shell(self.serial, f"cat {path}")
+
+    def wait_ui_description(self, expected: str, timeout_s: int = 60) -> str:
+        deadline = time.monotonic() + timeout_s
+        last = ""
+        while time.monotonic() < deadline:
+            last = self.ui_dump()
+            if ui_bounds(last, "content-desc", expected) is not None:
+                return last
+            time.sleep(1)
+        raise MeshLabError(f"[{self.alias}] UI description did not appear: {expected}")
+
+    def tap_ui_description(self, expected: str, timeout_s: int = 60) -> None:
+        xml = self.wait_ui_description(expected, timeout_s)
+        bounds = ui_bounds(xml, "content-desc", expected)
+        if bounds is None:
+            raise MeshLabError(f"[{self.alias}] UI description has no bounds: {expected}")
+        _shell(self.serial, f"input tap {bounds[0]} {bounds[1]}")
+
+    def enter_ui_text(self, field_description: str, value: str) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", value):
+            raise MeshLabError("UI test input must use only synthetic shell-safe characters")
+        for attempt in range(3):
+            self.tap_ui_description(field_description)
+            # Compose focus is applied on a later frame; immediate shell input can be dropped.
+            time.sleep(1.5 + (attempt * 0.75))
+            _shell(self.serial, f"input text {value}")
+            time.sleep(0.75)
+            if value in self.ui_dump():
+                return
+            _shell(self.serial, "input keyevent KEYCODE_BACK")
+            time.sleep(0.5)
+        raise MeshLabError(f"[{self.alias}] synthetic UI text was not entered")
+
+    def private_message_ui_count(self, token: str) -> int:
+        xml = self.ui_dump()
+        return sum(
+            1 for node in ET.fromstring(xml[xml.find("<?xml"):]).iter("node")
+            if token in node.attrib.get("content-desc", "") and
+            node.attrib.get("content-desc", "").startswith("Private message ")
+        )
+
+    def wait_private_message_ui_count(
+        self,
+        token: str,
+        expected: int = 1,
+        timeout_s: int = 20,
+    ) -> int:
+        """Require a stable Compose count while tolerating incomplete UIAutomator snapshots."""
+        deadline = time.monotonic() + timeout_s
+        stable_samples = 0
+        last_count = 0
+        while time.monotonic() < deadline:
+            last_count = self.private_message_ui_count(token)
+            if last_count > expected:
+                return last_count
+            stable_samples = stable_samples + 1 if last_count == expected else 0
+            if stable_samples >= 3:
+                return last_count
+            time.sleep(1)
+        return last_count
 
 
 class WatchDevice(Device):
@@ -900,6 +988,139 @@ def scenario_session_recovery(a: Device, b: Device) -> dict:
     }
 
 
+def _open_private_compose_chat(device: Device, peer_nickname: str, peer_id: str) -> dict:
+    device.tap_ui_description("Open private chat with")
+    device.wait_ui_description("Private session: Encrypted", timeout_s=90)
+    session = device.cmd_ok("session", peer=peer_id)
+    if not session.get("established"):
+        raise MeshLabError(
+            f"[{device.alias}] UI showed Encrypted before the underlying Noise session was established"
+        )
+    return session
+
+
+def _open_private_compose_pair(
+    a: Device,
+    b: Device,
+    id_a: str,
+    id_b: str,
+) -> dict:
+    """Open both ends before waiting so the inherited symmetric BLE Noise flow can settle."""
+    a.tap_ui_description("Open private chat with")
+    b.tap_ui_description("Open private chat with")
+    a.wait_ui_description("Private session: Encrypted", timeout_s=90)
+    b.wait_ui_description("Private session: Encrypted", timeout_s=90)
+    session_a = a.cmd_ok("session", peer=id_b)
+    session_b = b.cmd_ok("session", peer=id_a)
+    if not session_a.get("established") or not session_b.get("established"):
+        raise MeshLabError("private UI claimed Encrypted without two established Noise sessions")
+    return {"a": session_a, "b": session_b}
+
+
+def _private_compose_message_exactly_once(
+    sender: Device,
+    receiver: Device,
+    sender_id: str,
+) -> dict:
+    token = f"private-{uuid.uuid4().hex[:8]}"
+    sender.enter_ui_text("Private message input", token)
+    sender.tap_ui_description("Send private message")
+    receiver.wait_ui_description(token, timeout_s=60)
+
+    visible_count = receiver.wait_private_message_ui_count(token)
+    if visible_count != 1:
+        raise MeshLabError(
+            f"[{receiver.alias}] private Compose message was not visible exactly once: {visible_count}"
+        )
+    stored = receiver.cmd_ok("private_count", content=token, peer=sender_id)
+    if stored.get("count") != 1:
+        raise MeshLabError(f"private message was not stored exactly once: {stored}")
+    public = receiver.cmd_ok("msg_count", content=token, peer=sender_id)
+    if public.get("count") != 0:
+        raise MeshLabError(f"private message leaked into Nearby Mesh: {public}")
+    return {"content": token, "visible_count": visible_count, "stored": stored, "public": public}
+
+
+def scenario_checkpoint03_private_ui(a: Device, b: Device) -> dict:
+    """Checkpoint 03 product flow and the sequential public/private/recovery contract."""
+    id_a = whoami(a)["peer_id"]
+    id_b = whoami(b)["peer_id"]
+    wait_for_peer(a, id_b)
+    wait_for_peer(b, id_a)
+    ensure_direct_link(a, b, id_a, id_b)
+    peers_a = {peer.get("id") for peer in a.cmd_ok("peers").get("peers", [])}
+    peers_b = {peer.get("id") for peer in b.cmd_ok("peers").get("peers", [])}
+    if peers_a != {id_b} or peers_b != {id_a}:
+        raise MeshLabError("Checkpoint 03 requires exactly the two controlled phone peers")
+
+    public = {
+        "a_to_b": _public_message_exactly_once(a, b, id_a),
+        "b_to_a": _public_message_exactly_once(b, a, id_b),
+    }
+
+    initial_sessions = _open_private_compose_pair(a, b, id_a, id_b)
+    private = {
+        "a_to_b": _private_compose_message_exactly_once(a, b, id_a),
+        "b_to_a": _private_compose_message_exactly_once(b, a, id_b),
+    }
+
+    # Public messages must not be rendered inside either private conversation.
+    private_xml_a = a.ui_dump()
+    private_xml_b = b.ui_dump()
+    public_ab = public["a_to_b"]["send"]["content"]
+    public_ba = public["b_to_a"]["send"]["content"]
+    if public_ab in private_xml_b or public_ba in private_xml_a:
+        raise MeshLabError("public Nearby Mesh content leaked into the private Compose conversation")
+
+    # Return to Nearby Mesh and assert private content is not rendered there.
+    a.tap_ui_description("Back to Nearby Mesh")
+    b.tap_ui_description("Back to Nearby Mesh")
+    a.wait_ui_description("Mesh status:")
+    b.wait_ui_description("Mesh status:")
+    public_xml_a = a.ui_dump()
+    public_xml_b = b.ui_dump()
+    if private["b_to_a"]["content"] in public_xml_a or private["a_to_b"]["content"] in public_xml_b:
+        raise MeshLabError("private content leaked into the Nearby Mesh Compose timeline")
+
+    # Reopen before process churn. This sequential public -> private -> recovery order
+    # intentionally covers the contamination observation from Checkpoint 01.
+    _open_private_compose_chat(a, "bob", id_b)
+    _open_private_compose_chat(b, "alice", id_a)
+    b.force_stop()
+    b.wake()
+    b.launch()
+    b.cmd_ok("start")
+    b.cmd_ok("set_nickname", name="bob")
+    if whoami(b)["peer_id"] != id_b:
+        raise MeshLabError("peer identity changed across process death")
+
+    wait_for_peer(a, id_b, timeout_s=120)
+    wait_for_peer(b, id_a, timeout_s=120)
+    ensure_direct_link(a, b, id_a, id_b)
+    recovered_b = _open_private_compose_chat(b, "alice", id_a)
+    a.wait_ui_description("Private session: Encrypted", timeout_s=90)
+    recovered_a = a.cmd_ok("session", peer=id_b)
+    if not recovered_a.get("established"):
+        raise MeshLabError("phone A private UI did not correspond to a recovered Noise session")
+
+    recovered = {
+        "a_to_b": _private_compose_message_exactly_once(a, b, id_a),
+        "b_to_a": _private_compose_message_exactly_once(b, a, id_b),
+    }
+    return {
+        "mutual_discovery": True,
+        "public_regression": public,
+        "initial_sessions": initial_sessions,
+        "private_messages": private,
+        "public_private_separation": True,
+        "identity_preserved": True,
+        "recovered_sessions": {"a": recovered_a, "b": recovered_b},
+        "recovered_private_messages": recovered,
+        "sequential_session_contamination_reproduced": False,
+        "explicit_handshake_fallback_used": False,
+    }
+
+
 def scenario_identity_reset(a: Device, b: Device) -> dict:
     """pm clear on B mid-session: new identity, rediscovery, fresh handshake and DMs."""
     id_a = whoami(a)["peer_id"]
@@ -975,6 +1196,7 @@ SCENARIOS = {
     ),
     "media_private": scenario_private_media,
     "raw": scenario_raw,
+    "checkpoint03_private_ui": scenario_checkpoint03_private_ui,
     "session_recovery": scenario_session_recovery,
     "identity_reset": scenario_identity_reset,
 }

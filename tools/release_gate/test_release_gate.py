@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 from unittest import mock
 
-from tools.release_gate import android_lab
+from tools.release_gate import android_lab, mesh_lab
 from tools.release_gate.release_gate import (
     GateError,
     append_trace_event,
@@ -109,6 +109,22 @@ class ReleaseGateTest(unittest.TestCase):
             adb.touch()
             with mock.patch.dict(android_lab.os.environ, {"ANDROID_HOME": str(android_home)}):
                 self.assertEqual(str(adb), android_lab.find_adb())
+
+    def test_mesh_lab_finds_compose_semantics_bounds(self):
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<hierarchy><node content-desc="Private session: Encrypted" '
+            'bounds="[10,20][110,220]" /></hierarchy>'
+        )
+
+        self.assertEqual(
+            mesh_lab.ui_bounds(xml, "content-desc", "Encrypted"),
+            (60, 120),
+        )
+        self.assertIsNone(mesh_lab.ui_bounds(xml, "content-desc", "Unavailable"))
+
+    def test_checkpoint03_mesh_scenario_is_registered(self):
+        self.assertIn("checkpoint03_private_ui", mesh_lab.SCENARIOS)
 
     def test_manifest_covers_every_release_category(self):
         scenarios = validate_manifest(self.manifest)

@@ -74,6 +74,17 @@ fun StealthMeshScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    if (state.privateConversation != null) {
+        StealthMeshPrivateScreen(
+            state = state,
+            onBack = viewModel::closePrivateConversation,
+            onDraftChanged = viewModel::updatePrivateDraft,
+            onSend = viewModel::sendPrivateMessage,
+            modifier = modifier
+        )
+        return
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("stealthmesh_chat_shell"),
         topBar = {
@@ -111,7 +122,10 @@ fun StealthMeshScreen(
                 .padding(contentPadding)
         ) {
             ConnectionSummary(state.connectionState)
-            NearbyPeople(peers = state.peers)
+            NearbyPeople(
+                peers = state.peers,
+                onPeerSelected = viewModel::openPrivateConversation
+            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NearbyMeshConversation(
                 messages = state.messages,
@@ -155,7 +169,10 @@ private fun ConnectionSummary(connectionState: MeshConnectionState) {
 }
 
 @Composable
-private fun NearbyPeople(peers: List<NearbyPeer>) {
+private fun NearbyPeople(
+    peers: List<NearbyPeer>,
+    onPeerSelected: (NearbyPeer) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -194,7 +211,7 @@ private fun NearbyPeople(peers: List<NearbyPeer>) {
                 modifier = Modifier.testTag("nearby_people")
             ) {
                 items(peers, key = NearbyPeer::peerId) { peer ->
-                    PeerCard(peer)
+                    PeerCard(peer, onClick = { onPeerSelected(peer) })
                 }
             }
         }
@@ -202,13 +219,18 @@ private fun NearbyPeople(peers: List<NearbyPeer>) {
 }
 
 @Composable
-private fun PeerCard(peer: NearbyPeer) {
+private fun PeerCard(
+    peer: NearbyPeer,
+    onClick: () -> Unit
+) {
     Card(
+        onClick = onClick,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         modifier = Modifier.semantics {
             contentDescription = buildString {
+                append("Open private chat with ")
                 append(peer.nickname)
                 append(", ")
                 append(peer.signalStrength.accessibilityLabel)

@@ -36,6 +36,30 @@ enum class ChatDeliveryState {
     Received
 }
 
+sealed interface PrivateSessionState {
+    data object Establishing : PrivateSessionState
+    data object Encrypted : PrivateSessionState
+    data object Reconnecting : PrivateSessionState
+    data object Unavailable : PrivateSessionState
+    data class Error(val message: String) : PrivateSessionState
+}
+
+data class PrivateConversationTarget(
+    val peerId: String,
+    val nickname: String
+)
+
+data class PrivateChatMessage(
+    val id: String,
+    val conversationId: String,
+    val senderPeerId: String?,
+    val nickname: String,
+    val text: String,
+    val timestampMillis: Long,
+    val isMine: Boolean,
+    val deliveryState: ChatDeliveryState
+)
+
 data class NearbyMeshMessage(
     val id: String,
     val senderPeerId: String?,
@@ -54,10 +78,21 @@ data class StealthMeshUiState(
     val messages: List<NearbyMeshMessage> = emptyList(),
     val nickname: String = "",
     val draft: String = "",
-    val isSending: Boolean = false
+    val isSending: Boolean = false,
+    val privateConversation: PrivateConversationTarget? = null,
+    val privateSessionState: PrivateSessionState = PrivateSessionState.Unavailable,
+    val privateMessages: List<PrivateChatMessage> = emptyList(),
+    val privateDraft: String = "",
+    val isSendingPrivate: Boolean = false,
+    val privateSendError: String? = null
 ) {
     val canSend: Boolean
         get() = draft.isNotBlank() && !isSending && connectionState.canUseMesh()
+
+    val canSendPrivate: Boolean
+        get() = privateDraft.isNotBlank() &&
+            !isSendingPrivate &&
+            privateSessionState == PrivateSessionState.Encrypted
 }
 
 internal fun MeshConnectionState.canUseMesh(): Boolean = when (this) {

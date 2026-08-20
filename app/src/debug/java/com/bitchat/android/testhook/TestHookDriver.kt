@@ -70,6 +70,7 @@ object TestHookDriver {
             "broadcast_msg" -> broadcastMsg(context, intent.requiredString("content"), intent.getStringExtra("channel"))
             "dm_send" -> dmSend(context, intent.requiredString("peer"), intent.requiredString("content"), intent.getStringExtra("msg_id"))
             "dm_recv" -> dmRecv(context, intent)
+            "private_count" -> privateCount(context, intent)
             "msg_recv" -> msgRecv(context, intent)
             "msg_count" -> msgCount(context, intent)
             "favorite_set" -> favoriteSet(
@@ -271,6 +272,22 @@ object TestHookDriver {
             .put("sender", msg.sender)
             .put("content", msg.content)
             .put("msg_id", msg.id)
+    }
+
+    private fun privateCount(context: Context, intent: Intent): JSONObject {
+        val expectedContent = intent.requiredString("content")
+        val peer = intent.getStringExtra("peer")
+        val mesh = mesh(context)
+        val count = AppStateStore.privateMessages.value.values.flatten().count { message ->
+            message.isPrivate &&
+                message.content == expectedContent &&
+                (peer == null || message.senderPeerID == peer ||
+                    (message.senderPeerID == mesh.myPeerID && message.recipientNickname != null))
+        }
+        return ok("private_count")
+            .put("content", expectedContent)
+            .put("peer", peer)
+            .put("count", count)
     }
 
     private suspend fun msgRecv(context: Context, intent: Intent): JSONObject {
