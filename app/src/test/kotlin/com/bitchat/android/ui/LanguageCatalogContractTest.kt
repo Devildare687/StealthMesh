@@ -59,14 +59,17 @@ class LanguageCatalogContractTest {
 
     private fun String.toLanguageTagOrNull(): String? {
         if (!startsWith("values-") || this == "values-night") return null
-        return removePrefix("values-")
-            .split("-")
-            .joinToString("-") { qualifier ->
-                if (qualifier.startsWith("r") && qualifier.length == 3) {
-                    qualifier.drop(1)
-                } else {
-                    qualifier
-                }
+
+        val qualifiers = removePrefix("values-").split("-")
+        val language = qualifiers.firstOrNull() ?: return null
+        if (!language.matches(Regex("[a-z]{2,3}"))) return null
+
+        return qualifiers.joinToString("-") { qualifier ->
+            if (qualifier.startsWith("r") && qualifier.length == 3) {
+                qualifier.drop(1)
+            } else {
+                qualifier
             }
+        }
     }
 }

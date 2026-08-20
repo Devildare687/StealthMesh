@@ -1,25 +1,33 @@
 package com.bitchat.android.onboarding
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import com.bitchat.android.ui.theme.BitchatFontFamily
-import com.bitchat.android.R
 
-/**
- * Screen shown when checking Bluetooth status or requesting Bluetooth enable
- */
 @Composable
 fun BluetoothCheckScreen(
     modifier: Modifier,
@@ -29,255 +37,102 @@ fun BluetoothCheckScreen(
     onSkip: () -> Unit,
     isLoading: Boolean = false
 ) {
-    val colorScheme = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
 
-    Box(
-        modifier = modifier.padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = modifier.padding(28.dp), contentAlignment = Alignment.Center) {
         when (status) {
-            BluetoothStatus.DISABLED -> {
-                BluetoothDisabledContent(
-                    onEnableBluetooth = onEnableBluetooth,
-                    onRetry = onRetry,
-                    onSkip = onSkip,
-                    colorScheme = colorScheme,
-                    isLoading = isLoading
-                )
-            }
-            BluetoothStatus.NOT_SUPPORTED -> {
-                BluetoothNotSupportedContent(
-                    colorScheme = colorScheme,
-                    onSkip = onSkip
-                )
-            }
-            BluetoothStatus.ENABLED -> {
-                BluetoothCheckingContent(
-                    colorScheme = colorScheme
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun BluetoothDisabledContent(
-    onEnableBluetooth: () -> Unit,
-    onRetry: () -> Unit,
-    onSkip: () -> Unit,
-    colorScheme: ColorScheme,
-    isLoading: Boolean
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Bluetooth icon - using Bluetooth outlined icon in app's green color
-        Icon(
-            imageVector = Icons.Outlined.Bluetooth,
-            contentDescription = stringResource(R.string.cd_bluetooth),
-            modifier = Modifier.size(64.dp),
-            tint = Color(0xFF00C851) // App's main green color
-        )
-
-        Text(
-            text = stringResource(R.string.bluetooth_recommended),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = BitchatFontFamily,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.primary
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            BluetoothStatus.DISABLED -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                    Text(
-                        text = stringResource(R.string.bluetooth_needs_for),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurface
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                StealthMeshAccessBadge(label = "BT")
+                Text(
+                    text = "Bluetooth is taking the day off.",
+                    fontFamily = StealthMeshDisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colors.onBackground,
+                    textAlign = TextAlign.Center
                 )
-                
-                    Text(
-                        text = stringResource(R.string.bluetooth_needs_bullets),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = BitchatFontFamily,
-                        color = colorScheme.onSurface.copy(alpha = 0.8f)
-                    )
+                Text(
+                    text = "StealthMesh needs Bluetooth to spot nearby people and build local links.",
+                    fontFamily = StealthMeshDisplayFont,
+                    color = colors.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
                 )
-            }
-        }
-
-        if (isLoading) {
-            BluetoothLoadingIndicator()
-        } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(
-                    onClick = onEnableBluetooth,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF00C851) // App's main green color
-                    )
-                ) {
-                        Text(
-                            text = stringResource(R.string.enable_bluetooth),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = BitchatFontFamily,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
-
-                TextButton(
-                    onClick = onSkip,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = stringResource(R.string.skip),
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    )
+                if (isLoading) {
+                    BluetoothLoadingIndicator()
+                } else {
+                    Button(
+                        onClick = onEnableBluetooth,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
+                    ) {
+                        Text("Wake Bluetooth up", fontFamily = StealthMeshDisplayFont, fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
+                        Text("Not now", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
+                    }
                 }
             }
+
+            BluetoothStatus.NOT_SUPPORTED -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StealthMeshAccessBadge(label = "NO BT")
+                Text(
+                    text = "No Bluetooth radio found.",
+                    fontFamily = StealthMeshDisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colors.error,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "This device cannot join the nearby mesh without Bluetooth support.",
+                    fontFamily = StealthMeshDisplayFont,
+                    color = colors.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+                TextButton(onClick = onSkip) {
+                    Text("Continue anyway", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
+                }
+            }
+
+            BluetoothStatus.ENABLED -> Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                StealthMeshAccessBadge(label = "BT")
+                BluetoothLoadingIndicator()
+                Text(
+                    text = "Checking the radio link…",
+                    fontFamily = StealthMeshDisplayFont,
+                    color = colors.onSurface.copy(alpha = 0.7f)
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun BluetoothNotSupportedContent(
-    colorScheme: ColorScheme,
-    onSkip: () -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Error icon
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFFFEBEE)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.warning_emoji),
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        Text(
-            text = stringResource(R.string.bluetooth_not_supported),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = BitchatFontFamily,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.error
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = colorScheme.errorContainer.copy(alpha = 0.1f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.bluetooth_unsupported_explanation),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = BitchatFontFamily,
-                    color = colorScheme.onSurface
-                ),
-                modifier = Modifier.padding(16.dp),
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Button(
-            onClick = onSkip,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colorScheme.secondary
-            )
-        ) {
-            Text(text = stringResource(R.string.continue_btn))
-        }
-    }
-}
-
-@Composable
-private fun BluetoothCheckingContent(
-    colorScheme: ColorScheme
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontFamily = BitchatFontFamily,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.primary
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        BluetoothLoadingIndicator()
-
-        Text(
-            text = stringResource(R.string.checking_bluetooth_status),
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontFamily = BitchatFontFamily,
-                color = colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        )
     }
 }
 
 @Composable
 private fun BluetoothLoadingIndicator() {
-    // Animated rotation for the loading indicator
-    val infiniteTransition = rememberInfiniteTransition(label = "bluetooth_loading")
-    val rotationAngle by infiniteTransition.animateFloat(
+    val transition = rememberInfiniteTransition(label = "bluetooth_loading")
+    val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            animation = tween(1600, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
     )
 
-    Box(
-        modifier = Modifier.size(60.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier
-                .fillMaxSize()
-                .rotate(rotationAngle),
-            color = Color(0xFF2196F3), // Bluetooth blue
-            strokeWidth = 3.dp
-        )
-    }
+    CircularProgressIndicator(
+        modifier = Modifier.size(48.dp).rotate(rotation),
+        color = StealthMeshAccent,
+        strokeWidth = 3.dp
+    )
 }

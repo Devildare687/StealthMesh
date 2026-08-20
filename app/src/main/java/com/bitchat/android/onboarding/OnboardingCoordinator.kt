@@ -197,7 +197,7 @@ class OnboardingCoordinator(
             deniedPermissions.forEach { permission ->
                 append("- ${getPermissionDisplayName(permission)}\n")
             }
-            append("\nbitchat may not work properly without all permissions.")
+            append("\nStealthMesh needs this access to keep nearby messaging reliable.")
         }
         
         Log.w(TAG, "Partial permissions granted: $message")
@@ -215,11 +215,11 @@ class OnboardingCoordinator(
         
         if (deniedCritical.isNotEmpty()) {
             val message = buildString {
-                append("Critical permissions were denied. bitchat requires these permissions to function:\n")
+                append("StealthMesh still needs the following access to connect nearby:\n")
                 deniedCritical.keys.forEach { permission ->
                     append("- ${getPermissionDisplayName(permission)}\n")
                 }
-                append("\nPlease grant these permissions in Settings to use bitchat.")
+                append("\nOpen Android Settings to finish setup.")
             }
             
             Log.e(TAG, "Critical permissions denied: $deniedCritical")

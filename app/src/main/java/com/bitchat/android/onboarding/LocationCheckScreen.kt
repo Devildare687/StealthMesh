@@ -1,26 +1,33 @@
 package com.bitchat.android.onboarding
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import com.bitchat.android.ui.theme.BitchatFontFamily
-import com.bitchat.android.R
 
-/**
- * Screen shown when checking location services status or requesting location services enable
- */
 @Composable
 fun LocationCheckScreen(
     modifier: Modifier,
@@ -29,267 +36,103 @@ fun LocationCheckScreen(
     onRetry: () -> Unit,
     isLoading: Boolean = false
 ) {
-    val colorScheme = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
 
-    Box(
-        modifier = modifier.padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = modifier.padding(28.dp), contentAlignment = Alignment.Center) {
         when (status) {
-            LocationStatus.DISABLED -> {
-                LocationDisabledContent(
-                    onEnableLocation = onEnableLocation,
-                    onRetry = onRetry,
-                    colorScheme = colorScheme,
-                    isLoading = isLoading
-                )
-            }
-            LocationStatus.NOT_AVAILABLE -> {
-                LocationNotAvailableContent(
-                    colorScheme = colorScheme
-                )
-            }
-            LocationStatus.ENABLED -> {
-                LocationCheckingContent(
-                    colorScheme = colorScheme
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LocationDisabledContent(
-    onEnableLocation: () -> Unit,
-    onRetry: () -> Unit,
-    colorScheme: ColorScheme,
-    isLoading: Boolean
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Location icon - using LocationOn outlined icon in app's green color
-        Icon(
-            imageVector = Icons.Outlined.LocationOn,
-            contentDescription = stringResource(R.string.cd_location_services),
-            modifier = Modifier.size(64.dp),
-            tint = Color(0xFF00C851) // App's main green color
-        )
-
-        Text(
-            text = stringResource(R.string.location_services_required),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = BitchatFontFamily,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.primary
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            LocationStatus.DISABLED -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Privacy assurance section
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Security,
-                        contentDescription = stringResource(R.string.cd_privacy),
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.privacy_first),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onSurface
-                        )
-                    )
+                StealthMeshAccessBadge(label = "LOC")
+                Text(
+                    text = "Android has one weird Bluetooth rule.",
+                    fontFamily = StealthMeshDisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colors.onBackground,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Location services must be on for nearby Bluetooth discovery on this device. StealthMesh does not need your coordinates to chat locally.",
+                    fontFamily = StealthMeshDisplayFont,
+                    color = colors.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+                if (isLoading) {
+                    LocationLoadingIndicator()
+                } else {
+                    Button(
+                        onClick = onEnableLocation,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
+                    ) {
+                        Text("Open location controls", fontFamily = StealthMeshDisplayFont, fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = onRetry,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Check again", fontFamily = StealthMeshDisplayFont)
+                    }
                 }
-                
-                    Text(
-                        text = stringResource(R.string.location_explanation),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = BitchatFontFamily,
-                        color = colorScheme.onSurface.copy(alpha = 0.8f)
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = stringResource(R.string.location_needs_for),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurface
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                    Text(
-                        text = stringResource(R.string.location_needs_bullets),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = BitchatFontFamily,
-                        color = colorScheme.onSurface.copy(alpha = 0.8f)
-                    )
-                )
             }
-        }
 
-        if (isLoading) {
-            LocationLoadingIndicator()
-        } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            LocationStatus.NOT_AVAILABLE -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Button(
-                    onClick = onEnableLocation,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF00C851) // App's main green color
-                    )
-                ) {
-                        Text(
-                            text = stringResource(R.string.open_location_settings),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = BitchatFontFamily,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
+                StealthMeshAccessBadge(label = "LOC?")
+                Text(
+                    text = "Location services are unavailable.",
+                    fontFamily = StealthMeshDisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colors.error,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Android is not exposing the location service StealthMesh needs for Bluetooth discovery.",
+                    fontFamily = StealthMeshDisplayFont,
+                    color = colors.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+            }
 
-                OutlinedButton(
-                    onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                        Text(
-                            text = stringResource(R.string.check_again),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = BitchatFontFamily
-                        ),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
+            LocationStatus.ENABLED -> Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                StealthMeshAccessBadge(label = "LOC")
+                LocationLoadingIndicator()
+                Text(
+                    text = "Checking Android's discovery gate…",
+                    fontFamily = StealthMeshDisplayFont,
+                    color = colors.onSurface.copy(alpha = 0.7f)
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun LocationNotAvailableContent(
-    colorScheme: ColorScheme
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Error icon
-        Icon(
-            imageVector = Icons.Filled.ErrorOutline,
-            contentDescription = stringResource(R.string.cd_error),
-            modifier = Modifier.size(64.dp),
-            tint = colorScheme.error
-        )
-
-        Text(
-            text = stringResource(R.string.location_services_unavailable),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = BitchatFontFamily,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.error
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = colorScheme.errorContainer.copy(alpha = 0.1f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.location_unavailable_explanation),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = BitchatFontFamily,
-                    color = colorScheme.onSurface
-                ),
-                modifier = Modifier.padding(16.dp),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-private fun LocationCheckingContent(
-    colorScheme: ColorScheme
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontFamily = BitchatFontFamily,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.primary
-            ),
-            textAlign = TextAlign.Center
-        )
-
-        LocationLoadingIndicator()
-
-        Text(
-            text = stringResource(R.string.checking_location_services),
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontFamily = BitchatFontFamily,
-                color = colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        )
     }
 }
 
 @Composable
 private fun LocationLoadingIndicator() {
-    // Animated rotation for the loading indicator
-    val infiniteTransition = rememberInfiniteTransition(label = "location_loading")
-    val rotationAngle by infiniteTransition.animateFloat(
+    val transition = rememberInfiniteTransition(label = "location_loading")
+    val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            animation = tween(1600, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
     )
 
-    Box(
-        modifier = Modifier.size(60.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier
-                .fillMaxSize()
-                .rotate(rotationAngle),
-            color = Color(0xFF4CAF50), // Location green
-            strokeWidth = 3.dp
-        )
-    }
+    CircularProgressIndicator(
+        modifier = Modifier.size(48.dp).rotate(rotation),
+        color = StealthMeshAccent,
+        strokeWidth = 3.dp
+    )
 }

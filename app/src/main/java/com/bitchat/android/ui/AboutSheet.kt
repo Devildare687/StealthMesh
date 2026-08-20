@@ -82,6 +82,8 @@ import com.bitchat.android.ui.theme.LocalBitchatPalette
 import com.bitchat.android.util.ShareableApkVariant
 import com.bitchat.android.util.UniversalApkManager
 
+private const val SHOW_LEGACY_NETWORK_UI = false
+
 /**
  * Theme selection chip with Apple-like styling
  */
@@ -567,54 +569,54 @@ fun AboutSheet(
                                         color = colorScheme.outlineVariant
                                     )
 
-                                    // Proof of Work Toggle
-                                    SettingsToggleRow(
-                                        icon = Icons.Filled.Speed,
-                                        title = stringResource(R.string.about_pow),
-                                        subtitle = stringResource(R.string.about_pow_tip),
-                                        checked = powEnabled,
-                                        onCheckedChange = { PoWPreferenceManager.setPowEnabled(it) }
-                                    )
+                                    if (SHOW_LEGACY_NETWORK_UI) {
+                                        SettingsToggleRow(
+                                            icon = Icons.Filled.Speed,
+                                            title = stringResource(R.string.about_pow),
+                                            subtitle = stringResource(R.string.about_pow_tip),
+                                            checked = powEnabled,
+                                            onCheckedChange = { PoWPreferenceManager.setPowEnabled(it) }
+                                        )
 
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 54.dp),
-                                        thickness = 1.dp,
-                                        color = colorScheme.outlineVariant
-                                    )
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 54.dp),
+                                            thickness = 1.dp,
+                                            color = colorScheme.outlineVariant
+                                        )
 
-                                    // Tor Toggle
-                                    SettingsToggleRow(
-                                        icon = Icons.Filled.Security,
-                                        title = stringResource(R.string.about_tor_title),
-                                        subtitle = stringResource(R.string.about_tor_route),
-                                        checked = torMode.value == TorMode.ON,
-                                        onCheckedChange = { enabled ->
-                                            if (torAvailable) {
-                                                torMode.value = if (enabled) TorMode.ON else TorMode.OFF
-                                                TorPreferenceManager.set(context, torMode.value)
-                                            }
-                                        },
-                                        enabled = torAvailable,
-                                        statusIndicator = if (torMode.value == TorMode.ON) {
-                                            {
-                                                val statusColor = when {
-                                                    torStatus.running && torStatus.bootstrapPercent >= 100 -> colorScheme.primary
-                                                    torStatus.running -> palette.accentOrange
-                                                    else -> colorScheme.error
+                                        SettingsToggleRow(
+                                            icon = Icons.Filled.Security,
+                                            title = stringResource(R.string.about_tor_title),
+                                            subtitle = stringResource(R.string.about_tor_route),
+                                            checked = torMode.value == TorMode.ON,
+                                            onCheckedChange = { enabled ->
+                                                if (torAvailable) {
+                                                    torMode.value = if (enabled) TorMode.ON else TorMode.OFF
+                                                    TorPreferenceManager.set(context, torMode.value)
                                                 }
-                                                Surface(
-                                                    color = statusColor,
-                                                    shape = CircleShape,
-                                                    modifier = Modifier.size(8.dp)
-                                                ) {}
-                                            }
-                                        } else null
-                                    )
+                                            },
+                                            enabled = torAvailable,
+                                            statusIndicator = if (torMode.value == TorMode.ON) {
+                                                {
+                                                    val statusColor = when {
+                                                        torStatus.running && torStatus.bootstrapPercent >= 100 -> colorScheme.primary
+                                                        torStatus.running -> palette.accentOrange
+                                                        else -> colorScheme.error
+                                                    }
+                                                    Surface(
+                                                        color = statusColor,
+                                                        shape = CircleShape,
+                                                        modifier = Modifier.size(8.dp)
+                                                    ) {}
+                                                }
+                                            } else null
+                                        )
 
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 56.dp),
-                                        color = colorScheme.outline.copy(alpha = 0.12f)
-                                    )
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 56.dp),
+                                            color = colorScheme.outline.copy(alpha = 0.12f)
+                                        )
+                                    }
 
                                     // === Prepare App for Sharing Section ===
                                     val apkViewModel: ApkDownloadViewModel = viewModel()
@@ -1084,7 +1086,7 @@ fun AboutSheet(
                             }
 
                             // Tor unavailable hint
-                            if (!torAvailable) {
+                            if (SHOW_LEGACY_NETWORK_UI && !torAvailable) {
                                 Text(
                                     text = stringResource(R.string.tor_not_available_in_this_build),
                                     fontSize = 12.sp,
@@ -1104,7 +1106,7 @@ fun AboutSheet(
                         val powEnabled by PoWPreferenceManager.powEnabled.collectAsState()
                         val powDifficulty by PoWPreferenceManager.powDifficulty.collectAsState()
 
-                        if (powEnabled) {
+                        if (SHOW_LEGACY_NETWORK_UI && powEnabled) {
                             Column(modifier = Modifier.padding(top = 12.dp)) {
                                 Surface(
                                     modifier = Modifier
@@ -1181,7 +1183,7 @@ fun AboutSheet(
                         val torProvider = remember { ArtiTorManager.getInstance() }
                         val torStatus by torProvider.statusFlow.collectAsState()
 
-                        if (torMode.value == TorMode.ON) {
+                        if (SHOW_LEGACY_NETWORK_UI && torMode.value == TorMode.ON) {
                             Column(modifier = Modifier.padding(top = 12.dp)) {
                                 Surface(
                                     modifier = Modifier

@@ -21,25 +21,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.BluetoothDisabled
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.SignalCellularAlt
-import androidx.compose.material.icons.rounded.SignalCellularConnectedNoInternet0Bar
-import androidx.compose.material.icons.rounded.SignalCellularNull
-import androidx.compose.material.icons.rounded.WifiTethering
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,8 +42,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -62,7 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bitchat.android.R
 import java.text.DateFormat
 import java.util.Date
 
@@ -86,24 +78,49 @@ fun StealthMeshScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize().testTag("stealthmesh_chat_shell"),
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("stealthmesh_chat_shell"),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = "StealthMesh",
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = "Offline-first local chat",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.Black,
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(R.drawable.stealthmesh_mark),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(
+                                text = "StealthMesh",
+                                fontFamily = StealthMeshChatDisplayFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 19.sp
+                            )
+                            Text(
+                                text = "Nearby. Private. No server required.",
+                                fontFamily = StealthMeshChatDisplayFont,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
@@ -126,7 +143,6 @@ fun StealthMeshScreen(
                 peers = state.peers,
                 onPeerSelected = viewModel::openPrivateConversation
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NearbyMeshConversation(
                 messages = state.messages,
                 modifier = Modifier.weight(1f)
@@ -141,8 +157,10 @@ private fun ConnectionSummary(connectionState: MeshConnectionState) {
     Surface(
         color = visual.containerColor(),
         contentColor = visual.contentColor(),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 4.dp)
             .semantics {
                 stateDescription = visual.label
                 contentDescription = "Mesh status: ${visual.label}"
@@ -150,19 +168,21 @@ private fun ConnectionSummary(connectionState: MeshConnectionState) {
             .testTag("mesh_status")
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 15.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = visual.icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(visual.contentColor())
             )
-            Spacer(Modifier.width(10.dp))
             Text(
                 text = visual.label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium
+                fontFamily = StealthMeshChatDisplayFont,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -176,34 +196,51 @@ private fun NearbyPeople(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 14.dp)
+            .padding(top = 16.dp, bottom = 12.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Groups,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "Nearby People",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.semantics { heading() }
-            )
-        }
-        Spacer(Modifier.height(10.dp))
+        StealthMeshSectionLabel(
+            text = "Nearby",
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+        Spacer(Modifier.height(5.dp))
+        Text(
+            text = "People around you",
+            fontFamily = StealthMeshChatDisplayFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 21.sp,
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .semantics { heading() }
+        )
+        Spacer(Modifier.height(11.dp))
 
         if (peers.isEmpty()) {
-            Text(
-                text = "No one nearby yet. Keep StealthMesh open while it looks for people.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Text(
+                        text = "Quiet around here",
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        text = "Keep StealthMesh open for a moment while nearby devices show up.",
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         } else {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 20.dp),
@@ -225,8 +262,9 @@ private fun PeerCard(
 ) {
     Card(
         onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f)
         ),
         modifier = Modifier.semantics {
             contentDescription = buildString {
@@ -244,38 +282,35 @@ private fun PeerCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(StealthMeshChatAccent.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = peer.nickname.firstOrNull()?.uppercase() ?: "?",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold
+                    color = StealthMeshChatAccent,
+                    fontFamily = StealthMeshChatDisplayFont,
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
             Spacer(Modifier.width(10.dp))
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
                     text = peer.nickname,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge
+                    fontFamily = StealthMeshChatDisplayFont,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
                 )
                 Text(
                     text = peer.connectionLabel,
-                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = StealthMeshChatCodeFont,
+                    fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.width(10.dp))
-            Icon(
-                imageVector = peer.signalStrength.icon,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
         }
     }
 }
@@ -291,45 +326,62 @@ private fun NearbyMeshConversation(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
+        StealthMeshSectionLabel(
+            text = "Local room",
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+        )
         Text(
             text = "Nearby Mesh",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontFamily = StealthMeshChatDisplayFont,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 14.dp)
+                .padding(horizontal = 20.dp, vertical = 4.dp)
                 .semantics { heading() }
                 .testTag("nearby_mesh_title")
         )
+
         if (messages.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(32.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Rounded.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "Messages stay on the local mesh.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "Say hello when someone appears nearby.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(22.dp),
+                        horizontalAlignment = Alignment.Start,
+                        verticalArrangement = Arrangement.spacedBy(9.dp)
+                    ) {
+                        StealthMeshBadge("Local")
+                        Text(
+                            text = "This room exists only around you.",
+                            fontFamily = StealthMeshChatDisplayFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            text = "When someone appears nearby, say hi. Nothing needs a central chat server.",
+                            fontFamily = StealthMeshChatDisplayFont,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         } else {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize().testTag("nearby_mesh_messages"),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("nearby_mesh_messages"),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(messages, key = NearbyMeshMessage::id) { message ->
@@ -348,9 +400,9 @@ private fun MessageBubble(message: NearbyMeshMessage) {
     ) {
         Surface(
             color = if (message.isMine) {
-                MaterialTheme.colorScheme.primaryContainer
+                StealthMeshChatAccent.copy(alpha = 0.18f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f)
             },
             shape = RoundedCornerShape(18.dp),
             modifier = Modifier
@@ -359,25 +411,29 @@ private fun MessageBubble(message: NearbyMeshMessage) {
                     contentDescription = "${message.nickname}, ${message.text}, ${message.formattedTime}"
                 }
         ) {
-            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if (message.isMine) "You" else message.nickname,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StealthMeshChatAccent
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
                         text = message.formattedTime,
-                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = StealthMeshChatCodeFont,
+                        fontSize = 9.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(Modifier.height(3.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = message.text,
-                    style = MaterialTheme.typography.bodyLarge
+                    fontFamily = StealthMeshChatDisplayFont,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
                 )
             }
         }
@@ -392,104 +448,115 @@ private fun MessageComposer(
     onSend: () -> Unit
 ) {
     Surface(
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp
+        color = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp,
+        shadowElevation = 8.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.Bottom
         ) {
             OutlinedTextField(
                 value = draft,
                 onValueChange = onDraftChanged,
-                modifier = Modifier.weight(1f).testTag("message_input"),
-                placeholder = { Text("Message Nearby Mesh") },
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("message_input"),
+                placeholder = {
+                    Text(
+                        "Message the local room",
+                        fontFamily = StealthMeshChatDisplayFont
+                    )
+                },
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = StealthMeshChatAccent,
+                    cursorColor = StealthMeshChatAccent
+                ),
                 maxLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { if (canSend) onSend() })
             )
             Spacer(Modifier.width(8.dp))
-            FilledIconButton(
+            Button(
                 onClick = onSend,
                 enabled = canSend,
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = StealthMeshChatAccent,
+                    contentColor = Color.White
+                ),
                 modifier = Modifier
-                    .size(56.dp)
+                    .height(56.dp)
                     .semantics { contentDescription = "Send message" }
                     .testTag("send_message")
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.Send,
-                    contentDescription = null
+                Text(
+                    text = "Send",
+                    fontFamily = StealthMeshChatDisplayFont,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     }
 }
 
+private enum class StatusTone { Neutral, Positive, Error }
+
 private data class StatusVisual(
     val label: String,
-    val icon: ImageVector,
-    val isPositive: Boolean = false,
-    val isError: Boolean = false
+    val tone: StatusTone = StatusTone.Neutral
 )
 
 @Composable
-private fun StatusVisual.containerColor(): Color = when {
-    isError -> MaterialTheme.colorScheme.errorContainer
-    isPositive -> MaterialTheme.colorScheme.primaryContainer
-    else -> MaterialTheme.colorScheme.secondaryContainer
+private fun StatusVisual.containerColor(): Color = when (tone) {
+    StatusTone.Error -> MaterialTheme.colorScheme.errorContainer
+    StatusTone.Positive -> StealthMeshChatAccent.copy(alpha = 0.13f)
+    StatusTone.Neutral -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f)
 }
 
 @Composable
-private fun StatusVisual.contentColor(): Color = when {
-    isError -> MaterialTheme.colorScheme.onErrorContainer
-    isPositive -> MaterialTheme.colorScheme.onPrimaryContainer
-    else -> MaterialTheme.colorScheme.onSecondaryContainer
+private fun StatusVisual.contentColor(): Color = when (tone) {
+    StatusTone.Error -> MaterialTheme.colorScheme.onErrorContainer
+    StatusTone.Positive -> StealthMeshChatAccent
+    StatusTone.Neutral -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 private fun MeshConnectionState.toStatusVisual(): StatusVisual = when (this) {
-    MeshConnectionState.Stopped -> StatusVisual("Mesh stopped", Icons.Rounded.SignalCellularNull)
+    MeshConnectionState.Stopped -> StatusVisual("Mesh offline")
     MeshConnectionState.PermissionRequired -> StatusVisual(
-        "Nearby permission required",
-        Icons.Rounded.ErrorOutline,
-        isError = true
+        "Nearby access needed",
+        StatusTone.Error
     )
     MeshConnectionState.BluetoothOff -> StatusVisual(
-        "Bluetooth off",
-        Icons.Rounded.BluetoothDisabled,
-        isError = true
+        "Bluetooth is off",
+        StatusTone.Error
     )
-    MeshConnectionState.Starting -> StatusVisual("Starting mesh", Icons.Rounded.Refresh)
-    MeshConnectionState.Discovering -> StatusVisual("Looking nearby", Icons.Rounded.WifiTethering)
-    MeshConnectionState.ActiveNoPeers -> StatusVisual("Mesh active", Icons.Rounded.WifiTethering, isPositive = true)
+    MeshConnectionState.Starting -> StatusVisual("Starting local mesh")
+    MeshConnectionState.Discovering -> StatusVisual("Looking for nearby people")
+    MeshConnectionState.ActiveNoPeers -> StatusVisual(
+        "Ready — no one nearby yet",
+        StatusTone.Positive
+    )
     is MeshConnectionState.ActiveWithPeers -> StatusVisual(
-        if (count == 1) "1 person nearby" else "$count people nearby",
-        Icons.Rounded.WifiTethering,
-        isPositive = true
+        if (count == 1) "1 person in range" else "$count people in range",
+        StatusTone.Positive
     )
-    MeshConnectionState.Recovering -> StatusVisual("Reconnecting", Icons.Rounded.Refresh)
-    is MeshConnectionState.Error -> StatusVisual(message, Icons.Rounded.ErrorOutline, isError = true)
+    MeshConnectionState.Recovering -> StatusVisual("Reconnecting nearby links")
+    is MeshConnectionState.Error -> StatusVisual(message, StatusTone.Error)
 }
 
 private val NearbyPeer.connectionLabel: String
-    get() = if (isDirect) "Direct · ${signalStrength.accessibilityLabel}" else signalStrength.accessibilityLabel
+    get() = if (isDirect) "DIRECT · ${signalStrength.accessibilityLabel.uppercase()}" else signalStrength.accessibilityLabel.uppercase()
 
 private val SignalStrength.accessibilityLabel: String
     get() = when (this) {
-        SignalStrength.Strong -> "Strong signal"
-        SignalStrength.Nearby -> "Nearby signal"
-        SignalStrength.Weak -> "Weak signal"
-        SignalStrength.Unknown -> "Signal unavailable"
-    }
-
-private val SignalStrength.icon: ImageVector
-    get() = when (this) {
-        SignalStrength.Strong -> Icons.Rounded.SignalCellularAlt
-        SignalStrength.Nearby -> Icons.Rounded.SignalCellularConnectedNoInternet0Bar
-        SignalStrength.Weak,
-        SignalStrength.Unknown -> Icons.Rounded.SignalCellularNull
+        SignalStrength.Strong -> "Strong"
+        SignalStrength.Nearby -> "Nearby"
+        SignalStrength.Weak -> "Weak"
+        SignalStrength.Unknown -> "Signal unknown"
     }
 
 private val NearbyMeshMessage.formattedTime: String

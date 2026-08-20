@@ -1,226 +1,150 @@
 package com.bitchat.android.onboarding
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Power
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
-import com.bitchat.android.ui.theme.BitchatFontFamily
-import com.bitchat.android.R
 
-/**
- * Permission explanation screen shown before requesting permissions
- * Explains why bitchat needs each permission and reassures users about privacy
- */
 @Composable
 fun PermissionExplanationScreen(
     modifier: Modifier,
     permissionCategories: List<PermissionCategory>,
     onContinue: () -> Unit
 ) {
-    val colorScheme = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     val scrollState = rememberScrollState()
 
-    Box(
-        modifier = modifier
-    ) {
-        // Scrollable content
+    Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 88.dp) // Leave space for the fixed button
+                .padding(horizontal = 22.dp)
+                .padding(bottom = 92.dp)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Header Section - matching AboutSheet style
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontFamily = BitchatFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp
-                        ),
-                        color = colorScheme.onBackground
-                    )
-                }
+            Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
-                    text = stringResource(R.string.about_tagline),
-                    fontSize = 12.sp,
-                    fontFamily = BitchatFontFamily,
-                    color = colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-            }
-
-            // Privacy assurance section - matching AboutSheet card style
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = colorScheme.surfaceVariant.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Security,
-                            contentDescription = stringResource(R.string.cd_privacy_protected),
-                            tint = colorScheme.primary,
-                            modifier = Modifier
-                                .padding(top = 2.dp)
-                                .size(20.dp)
-                        )
-                        Column {
-                            Text(
-                                text = stringResource(R.string.privacy_protected),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.privacy_bullets),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = BitchatFontFamily,
-                                color = colorScheme.onBackground.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Section header
-            Text(
-                text = stringResource(R.string.permissions_header),
-                style = MaterialTheme.typography.labelLarge,
-                color = colorScheme.onBackground.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+            StealthMeshHeader(
+                eyebrow = "Local setup / 01",
+                title = "A few Android handshakes, then we disappear off-grid.",
+                subtitle = "No account circus. Just the access Android needs to find people nearby and keep the local mesh alive."
             )
 
-            // Permission categories
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = StealthMeshAccentSoft,
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Text(
+                        text = "LOCAL BY DESIGN",
+                        fontFamily = StealthMeshCodeFont,
+                        fontSize = 11.sp,
+                        letterSpacing = 1.4.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StealthMeshAccent
+                    )
+                    Text(
+                        text = "Nearby chats stay on the mesh. No central server is needed for local messaging.",
+                        fontFamily = StealthMeshDisplayFont,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = colors.onSurface.copy(alpha = 0.78f)
+                    )
+                }
+            }
+
+            Text(
+                text = "WHAT ANDROID WANTS",
+                fontFamily = StealthMeshCodeFont,
+                fontSize = 11.sp,
+                letterSpacing = 1.3.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.onBackground.copy(alpha = 0.54f),
+                modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+            )
+
             permissionCategories.forEach { category ->
-                PermissionCategoryCard(
-                    category = category,
-                    colorScheme = colorScheme
+                StealthMeshInfoPanel(
+                    badge = permissionBadge(category.type),
+                    title = permissionTitle(category.type),
+                    body = category.description
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Fixed button at bottom
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth(),
-            color = colorScheme.surface,
-            shadowElevation = 8.dp
+            color = colors.background,
+            tonalElevation = 0.dp,
+            shadowElevation = 10.dp
         ) {
             Button(
                 onClick = onContinue,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primary
-                )
+                    .padding(horizontal = 22.dp, vertical = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
             ) {
                 Text(
-                    text = stringResource(R.string.grant_permissions),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontFamily = BitchatFontFamily,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    text = "Cool, set it up",
+                    fontFamily = StealthMeshDisplayFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(vertical = 5.dp)
                 )
             }
         }
     }
 }
 
-@Composable
-private fun PermissionCategoryCard(
-    category: PermissionCategory,
-    colorScheme: ColorScheme
-) {
-    Row(
-        verticalAlignment = Alignment.Top,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Icon(
-            imageVector = getPermissionIcon(category.type),
-            contentDescription = category.type.nameValue,
-            tint = colorScheme.primary,
-            modifier = Modifier
-                .padding(top = 2.dp)
-                .size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(
-                text = category.type.nameValue,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-                color = colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = category.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = colorScheme.onBackground.copy(alpha = 0.8f)
-            )
-
-        }
-    }
+private fun permissionBadge(type: PermissionType): String = when (type) {
+    PermissionType.NEARBY_DEVICES -> "BT"
+    PermissionType.PRECISE_LOCATION -> "LOC"
+    PermissionType.BACKGROUND_LOCATION -> "BG"
+    PermissionType.MICROPHONE -> "MIC"
+    PermissionType.NOTIFICATIONS -> "PING"
+    PermissionType.WIFI_AWARE -> "WIFI"
+    PermissionType.BATTERY_OPTIMIZATION -> "BAT"
+    PermissionType.OTHER -> "SYS"
 }
 
-private fun getPermissionIcon(permissionType: PermissionType): ImageVector {
-    return when (permissionType) {
-        PermissionType.NEARBY_DEVICES -> Icons.Filled.Bluetooth
-        PermissionType.PRECISE_LOCATION -> Icons.Filled.LocationOn
-        PermissionType.BACKGROUND_LOCATION -> Icons.Filled.LocationOn
-        PermissionType.MICROPHONE -> Icons.Filled.Mic
-        PermissionType.NOTIFICATIONS -> Icons.Filled.Notifications
-        PermissionType.WIFI_AWARE -> Icons.Filled.Wifi
-        PermissionType.BATTERY_OPTIMIZATION -> Icons.Filled.Power
-        PermissionType.OTHER -> Icons.Filled.Settings
-    }
+private fun permissionTitle(type: PermissionType): String = when (type) {
+    PermissionType.NEARBY_DEVICES -> "Nearby links"
+    PermissionType.PRECISE_LOCATION -> "Android location gate"
+    PermissionType.BACKGROUND_LOCATION -> "Background discovery"
+    PermissionType.MICROPHONE -> "Microphone"
+    PermissionType.NOTIFICATIONS -> "Heads-ups"
+    PermissionType.WIFI_AWARE -> "Nearby Wi-Fi"
+    PermissionType.BATTERY_OPTIMIZATION -> "Stay awake"
+    PermissionType.OTHER -> "System access"
 }

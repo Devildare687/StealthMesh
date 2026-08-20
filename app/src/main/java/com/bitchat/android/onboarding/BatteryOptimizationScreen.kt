@@ -1,30 +1,43 @@
 package com.bitchat.android.onboarding
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.bitchat.android.ui.theme.BitchatFontFamily
-import com.bitchat.android.R
-
-/**
- * Screen shown when checking battery optimization status or requesting battery optimization disable
- */
 
 @Composable
 fun BatteryOptimizationScreen(
@@ -36,40 +49,26 @@ fun BatteryOptimizationScreen(
     isLoading: Boolean = false
 ) {
     val context = LocalContext.current
-    val colorScheme = MaterialTheme.colorScheme
-    
-    // Initialize preference manager
+    val colors = MaterialTheme.colorScheme
+
     LaunchedEffect(Unit) {
         BatteryOptimizationPreferenceManager.init(context)
     }
 
-    Box(
-        modifier = modifier.padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = modifier.padding(22.dp)) {
         when (status) {
-            BatteryOptimizationStatus.ENABLED -> {
-                BatteryOptimizationEnabledContent(
-                    onDisableBatteryOptimization = onDisableBatteryOptimization,
-                    onRetry = onRetry,
-                    onSkip = onSkip,
-                    colorScheme = colorScheme,
-                    isLoading = isLoading
-                )
-            }
-            
-            BatteryOptimizationStatus.DISABLED -> {
-                BatteryOptimizationCheckingContent(
-                    colorScheme = colorScheme
-                )
-            }
-            
-            BatteryOptimizationStatus.NOT_SUPPORTED -> {
-                BatteryOptimizationNotSupportedContent(
-                    onRetry = onRetry,
-                    colorScheme = colorScheme
-                )
-            }
+            BatteryOptimizationStatus.ENABLED -> BatteryOptimizationEnabledContent(
+                onDisableBatteryOptimization = onDisableBatteryOptimization,
+                onRetry = onRetry,
+                onSkip = onSkip,
+                colorScheme = colors,
+                isLoading = isLoading
+            )
+            BatteryOptimizationStatus.DISABLED -> BatteryOptimizationCheckingContent(colors)
+            BatteryOptimizationStatus.NOT_SUPPORTED -> BatteryOptimizationNotSupportedContent(
+                onRetry = onRetry,
+                colorScheme = colors
+            )
         }
     }
 }
@@ -83,125 +82,35 @@ private fun BatteryOptimizationEnabledContent(
     isLoading: Boolean
 ) {
     val context = LocalContext.current
-    
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Scrollable content area
+
+    Column(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header Section - matching AboutSheet style
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontFamily = BitchatFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp
-                    ),
-                    color = colorScheme.onBackground
-                )
+            StealthMeshHeader(
+                eyebrow = "Local setup / 03",
+                title = "Android is trying to put the mesh to sleep.",
+                subtitle = "You can let StealthMesh dodge battery restrictions for steadier background links — or skip it and keep moving."
+            )
 
-                    Text(
-                        text = stringResource(R.string.battery_optimization_detected_title),
-                    fontSize = 12.sp,
-                    fontFamily = BitchatFontFamily,
-                    color = colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-            }
-            
-            // Battery optimization info section
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = colorScheme.surfaceVariant.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Power,
-                            contentDescription = stringResource(R.string.cd_battery_optimization),
-                            tint = colorScheme.primary,
-                            modifier = Modifier
-                                .padding(top = 2.dp)
-                                .size(20.dp)
-                        )
-                        Column {
-                                Text(
-                                    text = stringResource(R.string.battery_optimization_enabled_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.battery_optimization_explanation_short),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colorScheme.onBackground.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // Benefits section
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = colorScheme.surfaceVariant.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.CheckCircle,
-                            contentDescription = stringResource(R.string.cd_benefits),
-                            tint = colorScheme.primary,
-                            modifier = Modifier
-                                .padding(top = 2.dp)
-                                .size(20.dp)
-                        )
-                        Column {
-                                Text(
-                                    text = stringResource(R.string.benefits_of_disabling),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.battery_benefits_short),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colorScheme.onBackground.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(6.dp))
+
+            StealthMeshInfoPanel(
+                badge = "BAT",
+                title = "Why bother?",
+                body = "Fewer dropped background links, smoother reconnects, and a better shot at receiving nearby messages while the app is not front and center."
+            )
+
+            StealthMeshInfoPanel(
+                badge = "OPT",
+                title = "Still your call",
+                body = "This is recommended, not mandatory. StealthMesh keeps working if you skip it; Android may just pause background activity more aggressively."
+            )
         }
-        
-        // Fixed buttons at the bottom
+
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -210,9 +119,8 @@ private fun BatteryOptimizationEnabledContent(
                 onClick = onDisableBatteryOptimization,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primary
-                )
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -222,15 +130,14 @@ private fun BatteryOptimizationEnabledContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                    Text(
-                        text = stringResource(R.string.disable_battery_optimization),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontFamily = BitchatFontFamily,
-                        fontWeight = FontWeight.Bold
-                    )
+                Text(
+                    text = "Let the mesh stay awake",
+                    fontFamily = StealthMeshDisplayFont,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 5.dp)
                 )
             }
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -238,16 +145,12 @@ private fun BatteryOptimizationEnabledContent(
                 OutlinedButton(
                     onClick = onRetry,
                     modifier = Modifier.weight(1f),
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                        Text(
-                            text = stringResource(R.string.check_again),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = BitchatFontFamily
-                        )
-                    )
+                    Text("Check again", fontFamily = StealthMeshDisplayFont)
                 }
-                
+
                 TextButton(
                     onClick = {
                         BatteryOptimizationPreferenceManager.setSkipped(context, true)
@@ -256,12 +159,7 @@ private fun BatteryOptimizationEnabledContent(
                     modifier = Modifier.weight(1f),
                     enabled = !isLoading
                 ) {
-                        Text(
-                            text = stringResource(R.string.battery_optimization_skip),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = BitchatFontFamily
-                        )
-                    )
+                    Text("Skip it", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
                 }
             }
         }
@@ -269,62 +167,35 @@ private fun BatteryOptimizationEnabledContent(
 }
 
 @Composable
-private fun BatteryOptimizationCheckingContent(
-    colorScheme: ColorScheme
-) {
+private fun BatteryOptimizationCheckingContent(colorScheme: ColorScheme) {
+    val infiniteTransition = rememberInfiniteTransition(label = "battery_check")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "battery_rotation"
+    )
+
     Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header Section - matching AboutSheet style
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontFamily = BitchatFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
-                ),
-                color = colorScheme.onBackground
-            )
-
-                Text(
-                    text = stringResource(R.string.battery_optimization_disabled_title),
-                fontSize = 12.sp,
-                fontFamily = BitchatFontFamily,
-                color = colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-        }
-        
-        val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-        val rotation by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(2000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "rotation"
+        StealthMeshMark(size = 72)
+        Spacer(modifier = Modifier.height(28.dp))
+        CircularProgressIndicator(
+            modifier = Modifier.size(48.dp).rotate(rotation),
+            color = StealthMeshAccent,
+            strokeWidth = 3.dp
         )
-        
-        Icon(
-            imageVector = Icons.Filled.BatteryStd,
-            contentDescription = stringResource(R.string.cd_checking_battery_optimization),
-            modifier = Modifier
-                .size(64.dp)
-                .rotate(rotation),
-            tint = colorScheme.primary
-        )
-        
-            Text(
-                text = stringResource(R.string.battery_optimization_success_message),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = BitchatFontFamily,
-                color = colorScheme.onBackground.copy(alpha = 0.8f)
-            ),
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = "Checking the battery leash…",
+            fontFamily = StealthMeshDisplayFont,
+            color = colorScheme.onBackground.copy(alpha = 0.74f),
             textAlign = TextAlign.Center
         )
     }
@@ -336,62 +207,34 @@ private fun BatteryOptimizationNotSupportedContent(
     colorScheme: ColorScheme
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header Section - matching AboutSheet style
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontFamily = BitchatFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
-                ),
-                color = colorScheme.onBackground
-            )
-
-            Text(
-                text = stringResource(R.string.battery_optimization_not_required),
-                fontSize = 12.sp,
-                fontFamily = BitchatFontFamily,
-                color = colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-        }
-        
-        Icon(
-            imageVector = Icons.Filled.CheckCircle,
-            contentDescription = stringResource(R.string.cd_not_supported_battery_optimization),
-            modifier = Modifier.size(64.dp),
-            tint = colorScheme.primary
-        )
-        
+        StealthMeshMark(size = 72)
+        Spacer(modifier = Modifier.height(22.dp))
         Text(
-            text = stringResource(R.string.battery_optimization_not_supported_message),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = BitchatFontFamily,
-                color = colorScheme.onBackground.copy(alpha = 0.8f)
-            ),
+            text = "No battery babysitting needed here.",
+            fontFamily = StealthMeshDisplayFont,
+            fontWeight = FontWeight.Bold,
+            color = colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
-        
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = "This device does not require the extra battery step.",
+            fontFamily = StealthMeshDisplayFont,
+            color = colorScheme.onBackground.copy(alpha = 0.66f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = onRetry,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colorScheme.primary
-            )
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
         ) {
-                Text(
-                    text = stringResource(R.string.continue_btn),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = BitchatFontFamily,
-                    fontWeight = FontWeight.Bold
-                )
-            )
+            Text("Continue", fontFamily = StealthMeshDisplayFont)
         }
     }
 }

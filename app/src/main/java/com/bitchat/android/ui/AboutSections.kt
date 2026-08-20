@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -43,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bitchat.android.ui.theme.BitchatFontFamily
 import com.bitchat.android.R
-import com.bitchat.android.core.ui.icon.BitChatIcon
 import com.bitchat.android.ui.theme.BitchatMotion
 import com.bitchat.android.ui.theme.LocalBitchatPalette
 
@@ -185,12 +185,18 @@ internal fun AboutHero(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = BitChatIcon,
-            contentDescription = null,
-            tint = colorScheme.primary,
-            modifier = Modifier.size(64.dp)
-        )
+        Surface(
+            modifier = Modifier.size(80.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = androidx.compose.ui.graphics.Color.Black
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.stealthmesh_mark),
+                contentDescription = stringResource(R.string.stealthmesh_logo_description),
+                tint = androidx.compose.ui.graphics.Color.White,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -373,32 +379,16 @@ internal fun AboutHowToUseSection(modifier: Modifier = Modifier) {
         )
 
         AboutInstructionRow(
-            iconRes = R.drawable.ic_spec_person,
-            text = stringResource(R.string.about_howto_nickname)
-        )
-        AboutInstructionRow(
-            iconRes = R.drawable.ic_spec_globe,
-            text = stringResource(R.string.about_howto_channels)
-        )
-        AboutInstructionRow(
             iconRes = R.drawable.ic_spec_people,
-            text = stringResource(R.string.about_howto_people)
+            text = stringResource(R.string.about_howto_nearby_people)
         )
         AboutInstructionRow(
-            iconRes = R.drawable.ic_spec_bookmark_outline,
-            text = stringResource(R.string.about_howto_bookmark)
+            iconRes = R.drawable.ic_spec_lock,
+            text = stringResource(R.string.about_howto_private_chat)
         )
         AboutInstructionRow(
-            iconRes = R.drawable.ic_spec_mention,
-            text = stringResource(R.string.about_howto_mention)
-        )
-        AboutInstructionRow(
-            iconRes = R.drawable.ic_spec_command,
-            text = stringResource(R.string.about_howto_commands)
-        )
-        AboutInstructionRow(
-            iconRes = R.drawable.ic_spec_waveform,
-            text = stringResource(R.string.about_howto_panic)
+            iconRes = R.drawable.ic_spec_wifi_off,
+            text = stringResource(R.string.about_howto_nearby_mesh)
         )
     }
 }
@@ -418,11 +408,6 @@ internal fun AboutFeatureCard(modifier: Modifier = Modifier) {
             R.drawable.ic_spec_lock,
             R.string.about_e2e_title,
             R.string.about_e2e_desc
-        ),
-        Triple(
-            R.drawable.ic_spec_globe,
-            R.string.about_online_geohash_title,
-            R.string.about_online_geohash_desc
         ),
         Triple(
             R.drawable.ic_spec_eye_off,

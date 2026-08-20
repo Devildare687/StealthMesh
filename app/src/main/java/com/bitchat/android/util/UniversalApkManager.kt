@@ -618,7 +618,7 @@ class UniversalApkManager(
         if (!verifyApkSignature(tempFile)) {
             clearPartialDownload()
             throw ApkDownloadException(
-                message = "APK from ${source.id} is not signed by a trusted BitChat release key.",
+                message = "APK from ${source.id} is not signed by a trusted StealthMesh release key.",
                 reason = ApkDownloadFailureReason.UntrustedKey,
                 messageArgs = listOf(source.displayName),
                 retryable = false,

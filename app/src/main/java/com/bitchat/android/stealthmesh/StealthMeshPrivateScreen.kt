@@ -1,5 +1,6 @@
 package com.bitchat.android.stealthmesh
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,39 +9,35 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.BluetoothDisabled
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -48,6 +45,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.text.DateFormat
 import java.util.Date
 
@@ -61,32 +59,47 @@ internal fun StealthMeshPrivateScreen(
     modifier: Modifier = Modifier
 ) {
     val target = state.privateConversation ?: return
+
     Scaffold(
-        modifier = modifier.fillMaxSize().testTag("stealthmesh_private_chat"),
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("stealthmesh_private_chat"),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(
+                    TextButton(
                         onClick = onBack,
                         modifier = Modifier.semantics {
                             contentDescription = "Back to Nearby Mesh"
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null)
+                        Text(
+                            text = "← Nearby",
+                            fontFamily = StealthMeshChatDisplayFont,
+                            color = StealthMeshChatAccent,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 },
                 title = {
-                    Column {
-                        Text(target.nickname, fontWeight = FontWeight.SemiBold)
+                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                         Text(
-                            "Private conversation",
-                            style = MaterialTheme.typography.labelMedium,
+                            target.nickname,
+                            fontFamily = StealthMeshChatDisplayFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            "Direct private chat",
+                            fontFamily = StealthMeshChatDisplayFont,
+                            fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
@@ -106,18 +119,27 @@ internal fun StealthMeshPrivateScreen(
         ) {
             PrivateSessionSummary(state.privateSessionState)
             state.privateSendError?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                        .semantics { contentDescription = "Private message error: $error" }
-                )
+                        .padding(horizontal = 18.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .semantics { contentDescription = "Private message error: $error" }
+                    )
+                }
             }
             PrivateConversation(
                 messages = state.privateMessages,
+                sessionState = state.privateSessionState,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -130,8 +152,10 @@ private fun PrivateSessionSummary(state: PrivateSessionState) {
     Surface(
         color = visual.containerColor(),
         contentColor = visual.contentColor(),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 4.dp)
             .semantics {
                 stateDescription = visual.label
                 contentDescription = "Private session: ${visual.label}"
@@ -139,15 +163,21 @@ private fun PrivateSessionSummary(state: PrivateSessionState) {
             .testTag("private_session_status")
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 15.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(visual.icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(visual.contentColor())
+            )
             Text(
                 visual.label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium
+                fontFamily = StealthMeshChatDisplayFont,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -156,32 +186,54 @@ private fun PrivateSessionSummary(state: PrivateSessionState) {
 @Composable
 private fun PrivateConversation(
     messages: List<PrivateChatMessage>,
+    sessionState: PrivateSessionState,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(messages.lastOrNull()?.id) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }
+
     if (messages.isEmpty()) {
-        Box(modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Rounded.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
-                )
-                Text(
-                    "Private messages appear here after the secure session is ready.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        val emptyCopy = sessionState.toPrivateEmptyStateCopy()
+        Box(
+            modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    StealthMeshBadge(emptyCopy.badge)
+                    Text(
+                        emptyCopy.title,
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        emptyCopy.body,
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     } else {
         LazyColumn(
             state = listState,
-            modifier = modifier.fillMaxWidth().testTag("private_messages"),
+            modifier = modifier
+                .fillMaxWidth()
+                .testTag("private_messages"),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -200,9 +252,9 @@ private fun PrivateMessageBubble(message: PrivateChatMessage) {
     ) {
         Surface(
             color = if (message.isMine) {
-                MaterialTheme.colorScheme.primaryContainer
+                StealthMeshChatAccent.copy(alpha = 0.18f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f)
             },
             shape = RoundedCornerShape(18.dp),
             modifier = Modifier
@@ -213,26 +265,37 @@ private fun PrivateMessageBubble(message: PrivateChatMessage) {
                 }
                 .testTag("private_message_${message.id}")
         ) {
-            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (message.isMine) "You" else message.nickname,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        fontFamily = StealthMeshChatDisplayFont,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StealthMeshChatAccent
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
                         message.formattedTime,
-                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = StealthMeshChatCodeFont,
+                        fontSize = 9.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(message.text, style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    message.text,
+                    fontFamily = StealthMeshChatDisplayFont,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
+                )
                 if (message.isMine) {
+                    Spacer(Modifier.height(3.dp))
                     Text(
-                        message.deliveryState.label,
-                        style = MaterialTheme.typography.labelSmall,
+                        message.deliveryState.label.uppercase(),
+                        fontFamily = StealthMeshChatCodeFont,
+                        fontSize = 9.sp,
+                        letterSpacing = 0.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -248,11 +311,15 @@ private fun PrivateMessageComposer(
     onDraftChanged: (String) -> Unit,
     onSend: () -> Unit
 ) {
-    Surface(tonalElevation = 3.dp, shadowElevation = 3.dp) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp,
+        shadowElevation = 8.dp
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.Bottom
         ) {
             OutlinedTextField(
@@ -262,67 +329,109 @@ private fun PrivateMessageComposer(
                     .weight(1f)
                     .semantics { contentDescription = "Private message input" }
                     .testTag("private_message_input"),
-                placeholder = { Text("Private message") },
+                placeholder = {
+                    Text(
+                        "Private message",
+                        fontFamily = StealthMeshChatDisplayFont
+                    )
+                },
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = StealthMeshChatAccent,
+                    cursorColor = StealthMeshChatAccent
+                ),
                 maxLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { if (canSend) onSend() })
             )
             Spacer(Modifier.width(8.dp))
-            FilledIconButton(
+            Button(
                 onClick = onSend,
                 enabled = canSend,
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = StealthMeshChatAccent,
+                    contentColor = Color.White
+                ),
                 modifier = Modifier
-                    .size(56.dp)
+                    .height(56.dp)
                     .semantics { contentDescription = "Send private message" }
                     .testTag("send_private_message")
             ) {
-                Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null)
+                Text(
+                    "Send",
+                    fontFamily = StealthMeshChatDisplayFont,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
 
+private enum class PrivateStatusTone { Neutral, Positive, Error }
+
 private data class PrivateStatusVisual(
     val label: String,
-    val icon: ImageVector,
-    val positive: Boolean = false,
-    val error: Boolean = false
+    val tone: PrivateStatusTone = PrivateStatusTone.Neutral
 )
 
+private data class PrivateEmptyStateCopy(
+    val badge: String,
+    val title: String,
+    val body: String
+)
+
+private fun PrivateSessionState.toPrivateEmptyStateCopy(): PrivateEmptyStateCopy = when (this) {
+    PrivateSessionState.Encrypted -> PrivateEmptyStateCopy(
+        badge = "Ready",
+        title = "Private line is ready.",
+        body = "Only the two of you are in here. Say something suspiciously normal."
+    )
+    PrivateSessionState.Establishing -> PrivateEmptyStateCopy(
+        badge = "Securing",
+        title = "Locking things down.",
+        body = "Building the encrypted direct link. This should be quick."
+    )
+    PrivateSessionState.Reconnecting -> PrivateEmptyStateCopy(
+        badge = "Retrying",
+        title = "Finding your private line again.",
+        body = "The encrypted link blinked for a sec. Keeping both devices nearby helps."
+    )
+    PrivateSessionState.Unavailable -> PrivateEmptyStateCopy(
+        badge = "Offline",
+        title = "Private line is taking a break.",
+        body = "Keep the other device nearby and StealthMesh will keep trying."
+    )
+    is PrivateSessionState.Error -> PrivateEmptyStateCopy(
+        badge = "Oops",
+        title = "Private line hit a snag.",
+        body = "Give it a moment and try again. Your public Nearby Mesh can keep running meanwhile."
+    )
+}
+
 private fun PrivateSessionState.toPrivateStatusVisual(): PrivateStatusVisual = when (this) {
-    PrivateSessionState.Establishing -> PrivateStatusVisual(
-        "Establishing secure session",
-        Icons.Rounded.Refresh
-    )
+    PrivateSessionState.Establishing -> PrivateStatusVisual("Securing direct link")
     PrivateSessionState.Encrypted -> PrivateStatusVisual(
-        "Encrypted",
-        Icons.Rounded.Lock,
-        positive = true
+        "Encrypted direct chat",
+        PrivateStatusTone.Positive
     )
-    PrivateSessionState.Reconnecting -> PrivateStatusVisual("Reconnecting", Icons.Rounded.Refresh)
-    PrivateSessionState.Unavailable -> PrivateStatusVisual(
-        "Unavailable",
-        Icons.Rounded.BluetoothDisabled
-    )
-    is PrivateSessionState.Error -> PrivateStatusVisual(
-        message,
-        Icons.Rounded.ErrorOutline,
-        error = true
-    )
+    PrivateSessionState.Reconnecting -> PrivateStatusVisual("Reconnecting private link")
+    PrivateSessionState.Unavailable -> PrivateStatusVisual("Private link unavailable")
+    is PrivateSessionState.Error -> PrivateStatusVisual(message, PrivateStatusTone.Error)
 }
 
 @Composable
-private fun PrivateStatusVisual.containerColor(): Color = when {
-    error -> MaterialTheme.colorScheme.errorContainer
-    positive -> MaterialTheme.colorScheme.primaryContainer
-    else -> MaterialTheme.colorScheme.secondaryContainer
+private fun PrivateStatusVisual.containerColor(): Color = when (tone) {
+    PrivateStatusTone.Error -> MaterialTheme.colorScheme.errorContainer
+    PrivateStatusTone.Positive -> StealthMeshChatAccent.copy(alpha = 0.13f)
+    PrivateStatusTone.Neutral -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f)
 }
 
 @Composable
-private fun PrivateStatusVisual.contentColor(): Color = when {
-    error -> MaterialTheme.colorScheme.onErrorContainer
-    positive -> MaterialTheme.colorScheme.onPrimaryContainer
-    else -> MaterialTheme.colorScheme.onSecondaryContainer
+private fun PrivateStatusVisual.contentColor(): Color = when (tone) {
+    PrivateStatusTone.Error -> MaterialTheme.colorScheme.onErrorContainer
+    PrivateStatusTone.Positive -> StealthMeshChatAccent
+    PrivateStatusTone.Neutral -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 private val PrivateChatMessage.formattedTime: String
