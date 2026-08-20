@@ -66,7 +66,7 @@ fun LocationCheckScreen(
                         onClick = onEnableLocation,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
                     ) {
                         Text("Open location controls", fontFamily = StealthMeshDisplayFont, fontWeight = FontWeight.Bold)
                     }
@@ -132,7 +132,7 @@ private fun LocationLoadingIndicator() {
 
     CircularProgressIndicator(
         modifier = Modifier.size(48.dp).rotate(rotation),
-        color = MaterialTheme.colorScheme.primary,
+        color = StealthMeshAccent,
         strokeWidth = 3.dp
     )
 }
