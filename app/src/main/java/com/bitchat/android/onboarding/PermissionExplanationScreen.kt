@@ -53,7 +53,7 @@ fun PermissionExplanationScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = colors.primary.copy(alpha = 0.08f),
+                color = StealthMeshAccentSoft,
                 shape = RoundedCornerShape(18.dp)
             ) {
                 Column(
@@ -66,7 +66,7 @@ fun PermissionExplanationScreen(
                         fontSize = 11.sp,
                         letterSpacing = 1.4.sp,
                         fontWeight = FontWeight.Bold,
-                        color = colors.primary
+                        color = StealthMeshAccent
                     )
                     Text(
                         text = "Nearby chats stay on the mesh. No central server is needed for local messaging.",
@@ -113,7 +113,7 @@ fun PermissionExplanationScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 22.dp, vertical = 16.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
             ) {
                 Text(
                     text = "Cool, set it up",
