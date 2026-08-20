@@ -80,7 +80,7 @@ fun BackgroundLocationPermissionScreen(
                     onClick = onContinue,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
                 ) {
                     Text(
                         text = "Keep me discoverable",
@@ -106,7 +106,7 @@ fun BackgroundLocationPermissionScreen(
                         onClick = onSkip,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Maybe later", fontFamily = StealthMeshDisplayFont)
+                        Text("Maybe later", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
                     }
                 }
             }
