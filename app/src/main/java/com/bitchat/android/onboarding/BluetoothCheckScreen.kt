@@ -9,10 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,12 +67,12 @@ fun BluetoothCheckScreen(
                         onClick = onEnableBluetooth,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = StealthMeshAccent)
                     ) {
                         Text("Wake Bluetooth up", fontFamily = StealthMeshDisplayFont, fontWeight = FontWeight.Bold)
                     }
                     TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
-                        Text("Not now", fontFamily = StealthMeshDisplayFont)
+                        Text("Not now", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
                     }
                 }
             }
@@ -100,7 +97,7 @@ fun BluetoothCheckScreen(
                     textAlign = TextAlign.Center
                 )
                 TextButton(onClick = onSkip) {
-                    Text("Continue anyway", fontFamily = StealthMeshDisplayFont)
+                    Text("Continue anyway", fontFamily = StealthMeshDisplayFont, color = StealthMeshAccent)
                 }
             }
 
@@ -135,7 +132,7 @@ private fun BluetoothLoadingIndicator() {
 
     CircularProgressIndicator(
         modifier = Modifier.size(48.dp).rotate(rotation),
-        color = MaterialTheme.colorScheme.primary,
+        color = StealthMeshAccent,
         strokeWidth = 3.dp
     )
 }
