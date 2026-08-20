@@ -7,7 +7,10 @@ import com.bitchat.android.noise.NoiseSession
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -455,6 +458,9 @@ class StealthMeshViewModelTest {
         val repository = FakeRepository()
         repository.privateSessions["peer-a"] = MutableStateFlow(PrivateSessionState.Encrypted)
         val viewModel = StealthMeshViewModel(repository, SavedStateHandle())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect { }
+        }
         viewModel.openPrivateConversation(
             NearbyPeer("peer-a", "Alice", SignalStrength.Strong, isDirect = true)
         )
