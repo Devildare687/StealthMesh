@@ -8,11 +8,11 @@
              Exported intentionally so `adb shell am broadcast` can reach it;
              never shipped in release builds. -->
         <receiver
-            android:name="com.bitchat.android.testhook.TestHookReceiver"
+            android:name="io.github.devildare687.stealthmesh.testhook.TestHookReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.bitchat.droid.TEST_HOOK" />
+                <action android:name="io.github.devildare687.stealthmesh.TEST_HOOK" />
             </intent-filter>
         </receiver>
     </application>

@@ -22,7 +22,7 @@ Before choosing commands or changing a scenario:
 4. Inspect the selected scenario function in `tools/release_gate/mesh_lab.py`;
    its current CLI and assertions are authoritative if documentation has drifted.
 5. Inspect
-   `app/src/debug/java/com/bitchat/android/testhook/TestHookDriver.kt` before
+   `app/src/debug/java/io/github/devildare687/stealthmesh/testhook/TestHookDriver.kt` before
    using an ad-hoc command, diagnosing hook behavior, or extending coverage.
 
 Do not infer a physical pass from unit tests, compilation, old evidence, or a

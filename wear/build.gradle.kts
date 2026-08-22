@@ -7,12 +7,12 @@ plugins {
 }
 
 android {
-    namespace = "com.bitchat.watch"
+    namespace = "io.github.devildare687.stealthmesh.watch"
     compileSdk = libs.versions.compileSdk.get().toInt()
     buildToolsVersion = libs.versions.buildTools.get()
 
     defaultConfig {
-        applicationId = "com.bitchat.droid"
+        applicationId = "io.github.devildare687.stealthmesh"
         minSdk = 33 // Wear OS 4 (Pixel Watch 1+): the S+ Bluetooth permissions the app
         // declares only exist from API 31, and API 30 would additionally require location
         // for BLE scan results, which the app deliberately refuses.
@@ -81,46 +81,46 @@ composeCompiler {
 // onboarding, nostr (except pure-Kotlin Bech32), net, geohash, wifi-aware, hotspot, voice
 // features, and the phone's foreground service.
 val sharedSourceIncludes = listOf(
-    "com/bitchat/android/protocol/**",
-    "com/bitchat/android/noise/**",
-    "com/bitchat/android/crypto/**",
-    "com/bitchat/android/identity/**",
-    "com/bitchat/android/mesh/**",
-    "com/bitchat/android/model/**",
-    "com/bitchat/android/sync/**",
-    "com/bitchat/android/favorites/**",
-    "com/bitchat/android/services/AppStateStore.kt",
-    "com/bitchat/android/services/ContactDirectory.kt",
-    "com/bitchat/android/services/ContactIdentityResolver.kt",
-    "com/bitchat/android/services/ConversationRepository.kt",
-    "com/bitchat/android/services/ConversationStorageCipher.kt",
-    "com/bitchat/android/services/PrivateMessageArrivalOrder.kt",
-    "com/bitchat/android/services/SeenMessageStore.kt",
-    "com/bitchat/android/services/VerificationService.kt",
-    "com/bitchat/android/services/meshgraph/**",
-    "com/bitchat/android/service/TransportBridgeService.kt",
-    "com/bitchat/android/nostr/Bech32.kt",
-    "com/bitchat/android/nostr/GeohashAliasRegistry.kt",
-    "com/bitchat/android/features/file/FileUtils.kt",
-    "com/bitchat/android/features/voice/**",
-    "com/bitchat/android/ui/debug/DebugSettingsManager.kt",
-    "com/bitchat/android/ui/debug/DebugPreferenceManager.kt",
-    "com/bitchat/android/ui/NotificationTextUtils.kt",
-    "com/bitchat/android/util/AppConstants.kt",
-    "com/bitchat/android/util/ByteArrayExtensions.kt",
-    "com/bitchat/android/util/ByteArrayWrapper.kt",
-    "com/bitchat/android/util/BinaryEncodingUtils.kt",
+    "io/github/devildare687/stealthmesh/protocol/**",
+    "io/github/devildare687/stealthmesh/noise/**",
+    "io/github/devildare687/stealthmesh/crypto/**",
+    "io/github/devildare687/stealthmesh/identity/**",
+    "io/github/devildare687/stealthmesh/mesh/**",
+    "io/github/devildare687/stealthmesh/model/**",
+    "io/github/devildare687/stealthmesh/sync/**",
+    "io/github/devildare687/stealthmesh/favorites/**",
+    "io/github/devildare687/stealthmesh/services/AppStateStore.kt",
+    "io/github/devildare687/stealthmesh/services/ContactDirectory.kt",
+    "io/github/devildare687/stealthmesh/services/ContactIdentityResolver.kt",
+    "io/github/devildare687/stealthmesh/services/ConversationRepository.kt",
+    "io/github/devildare687/stealthmesh/services/ConversationStorageCipher.kt",
+    "io/github/devildare687/stealthmesh/services/PrivateMessageArrivalOrder.kt",
+    "io/github/devildare687/stealthmesh/services/SeenMessageStore.kt",
+    "io/github/devildare687/stealthmesh/services/VerificationService.kt",
+    "io/github/devildare687/stealthmesh/services/meshgraph/**",
+    "io/github/devildare687/stealthmesh/service/TransportBridgeService.kt",
+    "io/github/devildare687/stealthmesh/nostr/Bech32.kt",
+    "io/github/devildare687/stealthmesh/nostr/GeohashAliasRegistry.kt",
+    "io/github/devildare687/stealthmesh/features/file/FileUtils.kt",
+    "io/github/devildare687/stealthmesh/features/voice/**",
+    "io/github/devildare687/stealthmesh/ui/debug/DebugSettingsManager.kt",
+    "io/github/devildare687/stealthmesh/ui/debug/DebugPreferenceManager.kt",
+    "io/github/devildare687/stealthmesh/ui/NotificationTextUtils.kt",
+    "io/github/devildare687/stealthmesh/util/AppConstants.kt",
+    "io/github/devildare687/stealthmesh/util/ByteArrayExtensions.kt",
+    "io/github/devildare687/stealthmesh/util/ByteArrayWrapper.kt",
+    "io/github/devildare687/stealthmesh/util/BinaryEncodingUtils.kt",
 )
 val sharedSourceExcludes = listOf(
-    "com/bitchat/android/model/FileSharingManager.kt",
+    "io/github/devildare687/stealthmesh/model/FileSharingManager.kt",
     // Legacy phone monolith and Wi-Fi Aware multiplexer; the watch composes its own service
     // (MeshCore-style) in M2 instead of reusing these.
-    "com/bitchat/android/mesh/BluetoothMeshService.kt",
-    "com/bitchat/android/mesh/UnifiedMeshService.kt",
+    "io/github/devildare687/stealthmesh/mesh/BluetoothMeshService.kt",
+    "io/github/devildare687/stealthmesh/mesh/UnifiedMeshService.kt",
     // Phone permission policy additionally requires location (legacy BLE); the watch app
     // declares Bluetooth permissions only, so it ships its own same-FQN variant in
     // wear/src/main (Bluetooth-only check).
-    "com/bitchat/android/mesh/BluetoothPermissionManager.kt",
+    "io/github/devildare687/stealthmesh/mesh/BluetoothPermissionManager.kt",
 )
 
 val syncSharedAppSources = tasks.register<Sync>("syncSharedAppSources") {
@@ -137,15 +137,15 @@ val syncSharedAppSources = tasks.register<Sync>("syncSharedAppSources") {
 val syncSharedAppTests = tasks.register<Sync>("syncSharedAppTests") {
     from("../app/src/test/java") {
         include(
-            "com/bitchat/android/protocol/**",
-            "com/bitchat/android/crypto/**",
-            "com/bitchat/android/mesh/**",
+            "io/github/devildare687/stealthmesh/protocol/**",
+            "io/github/devildare687/stealthmesh/crypto/**",
+            "io/github/devildare687/stealthmesh/mesh/**",
         )
     }
     from("../app/src/test/kotlin") {
         include(
             "android/**",
-            "com/bitchat/android/mesh/**",
+            "io/github/devildare687/stealthmesh/mesh/**",
             "com/bitchat/FileTransferTest.kt",
         )
     }

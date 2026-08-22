@@ -349,11 +349,11 @@ class ReleaseGateTest(unittest.TestCase):
             [
                 mock.call(
                     "ephemeral-selector",
-                    ["shell", "am", "force-stop", "com.bitchat.droid"],
+                    ["shell", "am", "force-stop", "io.github.devildare687.stealthmesh"],
                 ),
                 mock.call(
                     "ephemeral-selector",
-                    ["shell", "pm", "clear", "com.bitchat.droid"],
+                    ["shell", "pm", "clear", "io.github.devildare687.stealthmesh"],
                 ),
             ],
             run_adb.call_args_list,
@@ -366,7 +366,7 @@ class ReleaseGateTest(unittest.TestCase):
             "TOTAL 2048",
             "7",
             "11",
-            "WakeLock com.bitchat.droid\nWakeLock another.package",
+            "WakeLock io.github.devildare687.stealthmesh\nWakeLock another.package",
             "level: 73",
         ]
         metrics = android_lab.collect_resource_snapshot("ephemeral-selector")
@@ -384,7 +384,7 @@ class ReleaseGateTest(unittest.TestCase):
         self.assertEqual(
             mock.call(
                 "ephemeral-selector",
-                ["shell", "pidof", "com.bitchat.droid"],
+                ["shell", "pidof", "io.github.devildare687.stealthmesh"],
             ),
             run_adb.call_args_list[0],
         )
