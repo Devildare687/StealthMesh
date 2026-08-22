@@ -344,7 +344,7 @@ See `TestHookDriver.kt` for the full command set (`ping`, `start`, `stop`,
   FragmentManager BitchatFilePacket` shows commands, results, decrypt
   failures, fragment rejects, and saved incoming files in real time.
 - Results also persist on-device at
-  `run-as com.bitchat.droid cat cache/testhook/results/<id>.json`.
+  `run-as io.github.devildare687.stealthmesh cat cache/testhook/results/<id>.json`.
 
 Unlike the release gate, this harness is a development aid: it prints raw
 diagnostics and does not produce a privacy-checked approval bundle.

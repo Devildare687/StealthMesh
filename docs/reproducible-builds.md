@@ -192,7 +192,7 @@ GitHub universal APK or to a locally built APK. Use this procedure instead:
    ```
 
    The signer SHA-256 must equal the Play Console app-signing certificate.
-4. Confirm package name `com.bitchat.droid`, version code, version name, and
+4. Confirm package name `io.github.devildare687.stealthmesh`, version code, version name, and
    manifest/security configuration with Android's `apkanalyzer` or `aapt2`.
 5. Recreate Google's split-generation behavior from the reproduced AAB with the
    same `bundletool` version and a saved device specification:

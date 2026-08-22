@@ -22,12 +22,12 @@ require(
 }
 
 android {
-    namespace = "com.bitchat.android"
+    namespace = "io.github.devildare687.stealthmesh"
     compileSdk = libs.versions.compileSdk.get().toInt()
     buildToolsVersion = libs.versions.buildTools.get()
 
     defaultConfig {
-        applicationId = "com.bitchat.droid"
+        applicationId = "io.github.devildare687.stealthmesh"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 40

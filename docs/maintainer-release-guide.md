@@ -12,7 +12,7 @@ No keystore or password is stored in GitHub, GitHub Actions, the repository,
 release notes, or workflow artifacts.
 
 This runbook releases both the phone and Wear OS apps under the shared Play
-application ID `com.bitchat.droid`. Wear releases use the independent version
+application ID `io.github.devildare687.stealthmesh`. Wear releases use the independent version
 code range beginning at `1000000001`; every phone and Wear artifact uploaded to
 one Play listing must have a unique version code.
 
@@ -63,7 +63,7 @@ The maintainer needs:
 - a GitHub CLI login authorized for
   `permissionlesstech/bitchat-android`;
 - Play Console permission to create and promote releases for
-  `com.bitchat.droid`; and
+  `io.github.devildare687.stealthmesh`; and
 - access to the project's release approval record.
 
 Check the GitHub login:
@@ -488,7 +488,7 @@ Keep it as a draft until the Play internal-track checks below pass.
 
 ## 9. Upload and test the AABs in Google Play
 
-1. Open Play Console and select `com.bitchat.droid`.
+1. Open Play Console and select `io.github.devildare687.stealthmesh`.
 2. Open **Test and release > Testing > Internal testing**.
 3. Create a new release.
 4. Upload exactly:
