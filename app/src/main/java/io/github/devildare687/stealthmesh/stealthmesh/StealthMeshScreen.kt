@@ -27,6 +27,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -38,6 +39,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +71,7 @@ fun StealthMeshScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showSettings by rememberSaveable { mutableStateOf(false) }
 
     if (state.privateConversation != null) {
         StealthMeshPrivateScreen(
@@ -121,7 +128,19 @@ fun StealthMeshScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
-                )
+                ),
+                actions = {
+                    IconButton(
+                        onClick = { showSettings = true },
+                        modifier = Modifier.testTag("open_settings")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = "Open settings",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
             )
         },
         bottomBar = {
@@ -148,6 +167,14 @@ fun StealthMeshScreen(
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+
+    if (showSettings) {
+        StealthMeshSettingsSheet(
+            currentDisplayName = state.nickname,
+            onDismiss = { showSettings = false },
+            onSaveDisplayName = viewModel::setDisplayName
+        )
     }
 }
 

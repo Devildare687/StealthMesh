@@ -131,6 +131,46 @@ class StealthMeshRepositoryTest {
     }
 
     @Test
+    fun `valid display name is trimmed and sent through existing nickname updater`() {
+        val source = FakeStateSource(nicknameValue = "anon1234")
+        val updates = mutableListOf<String>()
+        val repository = AppStateStealthMeshRepository(
+            gateway = FakeGateway(),
+            source = source,
+            nicknameUpdater = { nickname ->
+                updates += nickname
+                source.nickname.value = nickname
+            }
+        )
+
+        val result = repository.setDisplayName("  Nova  ")
+
+        assertTrue(result.isSuccess)
+        assertEquals("Nova", result.getOrNull())
+        assertEquals(listOf("Nova"), updates)
+        assertEquals("Nova", repository.nickname.value)
+    }
+
+    @Test
+    fun `empty and over-limit display names are rejected without mutation`() {
+        val source = FakeStateSource(nicknameValue = "anon1234")
+        val updates = mutableListOf<String>()
+        val repository = AppStateStealthMeshRepository(
+            gateway = FakeGateway(),
+            source = source,
+            nicknameUpdater = updates::add
+        )
+
+        val empty = repository.setDisplayName("   ")
+        val overLimit = repository.setDisplayName("x".repeat(16))
+
+        assertTrue(empty.isFailure)
+        assertTrue(overLimit.isFailure)
+        assertTrue(updates.isEmpty())
+        assertEquals("anon1234", repository.nickname.value)
+    }
+
+    @Test
     fun `delivery status mapping preserves valid transitions`() {
         val sending = message("1", "hello").copy(deliveryStatus = DeliveryStatus.Sending)
         val delivered = sending.copy(
@@ -431,6 +471,18 @@ class StealthMeshViewModelTest {
     }
 
     @Test
+    fun `display name update is reflected in viewmodel state`() = runTest {
+        val repository = FakeRepository()
+        val viewModel = StealthMeshViewModel(repository, SavedStateHandle())
+
+        val result = viewModel.setDisplayName("Nova")
+        val state = viewModel.uiState.first { it.nickname == "Nova" }
+
+        assertTrue(result.isSuccess)
+        assertEquals("Nova", state.nickname)
+    }
+
+    @Test
     fun `selecting nearby peer opens only that private conversation`() = runTest {
         val repository = FakeRepository()
         repository.privateSessions["peer-a"] = MutableStateFlow(PrivateSessionState.Encrypted)
@@ -511,6 +563,11 @@ class StealthMeshViewModelTest {
 
         override fun updateRuntimeState(state: MeshRuntimeState) {
             connection.value = state.toConnectionState(nearbyPeers.value.size)
+        }
+
+        override fun setDisplayName(displayName: String): Result<String> {
+            nickname.value = displayName
+            return Result.success(displayName)
         }
 
         override fun sendPublicMessage(content: String): Result<Unit> {

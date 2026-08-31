@@ -80,7 +80,10 @@ class MainActivity : OrientationAwareActivity() {
             ): T {
                 @Suppress("UNCHECKED_CAST")
                 return StealthMeshViewModel(
-                    repository = AppStateStealthMeshRepository(unifiedMeshService),
+                    repository = AppStateStealthMeshRepository(
+                        mesh = unifiedMeshService,
+                        nicknameUpdater = chatViewModel::setNickname
+                    ),
                     savedStateHandle = extras.createSavedStateHandle()
                 ) as T
             }
