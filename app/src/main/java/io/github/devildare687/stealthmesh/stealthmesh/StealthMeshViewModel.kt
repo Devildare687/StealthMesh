@@ -103,6 +103,9 @@ class StealthMeshViewModel(
         savedStateHandle[DRAFT_KEY] = value
     }
 
+    fun setDisplayName(displayName: String): Result<String> =
+        repository.setDisplayName(displayName)
+
     fun sendMessage() {
         val content = draft.value
         if (content.isBlank() || isSending.value) return

@@ -6,6 +6,7 @@ import io.github.devildare687.stealthmesh.model.DeliveryStatus
 import io.github.devildare687.stealthmesh.noise.NoiseSession
 import io.github.devildare687.stealthmesh.services.AppStateStore
 import io.github.devildare687.stealthmesh.services.ContactDirectory
+import io.github.devildare687.stealthmesh.util.AppConstants
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +27,7 @@ interface StealthMeshRepository {
     val nickname: StateFlow<String>
 
     fun updateRuntimeState(state: MeshRuntimeState)
+    fun setDisplayName(displayName: String): Result<String>
     fun sendPublicMessage(content: String): Result<Unit>
     fun privateMessages(peerId: String): Flow<List<PrivateChatMessage>>
     fun privateSessionState(peerId: String): Flow<PrivateSessionState>
@@ -143,15 +145,20 @@ private class ProductionStealthMeshGateway(
 class AppStateStealthMeshRepository internal constructor(
     private val gateway: StealthMeshGateway,
     private val source: StealthMeshStateSource,
+    private val nicknameUpdater: (String) -> Unit = {},
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val newMessageId: () -> String = { UUID.randomUUID().toString().uppercase() },
     private val canonicalConversationId: (String) -> String =
         ContactDirectory::canonicalConversationId,
     private val sessionPollMillis: Long = 500L
 ) : StealthMeshRepository {
-    constructor(mesh: MeshService) : this(
+    constructor(
+        mesh: MeshService,
+        nicknameUpdater: (String) -> Unit
+    ) : this(
         gateway = ProductionStealthMeshGateway(mesh),
-        source = AppStateStealthMeshSource
+        source = AppStateStealthMeshSource,
+        nicknameUpdater = nicknameUpdater
     )
 
     private val runtimeState = MutableStateFlow<MeshRuntimeState>(MeshRuntimeState.Starting)
@@ -183,6 +190,25 @@ class AppStateStealthMeshRepository internal constructor(
 
     override fun updateRuntimeState(state: MeshRuntimeState) {
         runtimeState.value = state
+    }
+
+    override fun setDisplayName(displayName: String): Result<String> {
+        val normalized = displayName.trim()
+        if (normalized.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Display name can’t be empty"))
+        }
+        if (normalized.length > AppConstants.UI.MAX_NICKNAME_LENGTH) {
+            return Result.failure(
+                IllegalArgumentException(
+                    "Display name must be ${AppConstants.UI.MAX_NICKNAME_LENGTH} characters or fewer"
+                )
+            )
+        }
+
+        return runCatching {
+            nicknameUpdater(normalized)
+            normalized
+        }
     }
 
     override fun sendPublicMessage(content: String): Result<Unit> {
