@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,6 +44,154 @@ class GitHubReleaseClientTest {
     @After
     fun tearDown() {
         server.close()
+    }
+
+    @Test
+    fun `installed alpha selects a newer alpha release`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            releaseList(
+                release("v0.2.2-alpha", prerelease = true),
+                release("v0.2.3-alpha", prerelease = true)
+            ),
+            currentVersionName = "0.2.2-alpha"
+        )
+
+        assertEquals("0.2.3-alpha", selected?.versionName)
+        assertTrue(selected?.prerelease == true)
+    }
+
+    @Test
+    fun `prerelease ordering prefers beta and numeric suffixes`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            releaseList(
+                release("v0.3.0-alpha", prerelease = true),
+                release("v0.3.0-beta.2", prerelease = true),
+                release("v0.3.0-beta.10", prerelease = true)
+            ),
+            currentVersionName = "0.2.9-alpha"
+        )
+
+        assertEquals("0.3.0-beta.10", selected?.versionName)
+    }
+
+    @Test
+    fun `drafts are ignored even when they have the highest version`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            releaseList(
+                release("v9.0.0-alpha", prerelease = true, draft = true),
+                release("v0.2.3-alpha", prerelease = true)
+            ),
+            currentVersionName = "0.2.2-alpha"
+        )
+
+        assertEquals("0.2.3-alpha", selected?.versionName)
+    }
+
+    @Test
+    fun `older and equal releases are not update candidates`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            releaseList(
+                release("v0.2.1-alpha", prerelease = true),
+                release("v0.2.2-alpha", prerelease = true)
+            ),
+            currentVersionName = "0.2.2-alpha"
+        )
+
+        assertNull(selected)
+    }
+
+    @Test
+    fun `stable build ignores prereleases and selects newer stable`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            releaseList(
+                release("v2.0.0-beta", prerelease = true),
+                release("v1.1.0", prerelease = false)
+            ),
+            currentVersionName = "1.0.0"
+        )
+
+        assertEquals("1.1.0", selected?.versionName)
+        assertFalse(selected?.prerelease ?: true)
+    }
+
+    @Test
+    fun `only the exact official universal APK asset is selected`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            """
+            [
+              {
+                "tag_name": "v0.2.3-alpha",
+                "draft": false,
+                "prerelease": true,
+                "assets": [
+                  {
+                    "name": "app-arm64-v8a-debug.apk",
+                    "browser_download_url": "https://github.com/Devildare687/StealthMesh/releases/download/v0.2.3-alpha/app-arm64-v8a-debug.apk",
+                    "size": 10
+                  },
+                  {
+                    "name": "stealthmesh-universal.apk",
+                    "browser_download_url": "https://github.com/Devildare687/StealthMesh/releases/download/v0.2.3-alpha/stealthmesh-universal.apk",
+                    "size": 20
+                  },
+                  {
+                    "name": "app-universal-debug.apk",
+                    "browser_download_url": "https://github.com/Devildare687/StealthMesh/releases/download/v0.2.3-alpha/app-universal-debug.apk",
+                    "size": 30
+                  }
+                ]
+              }
+            ]
+            """.trimIndent(),
+            currentVersionName = "0.2.2-alpha"
+        )
+
+        assertEquals("app-universal-debug.apk", selected?.universalApkName)
+        assertEquals(30L, selected?.universalApkSize)
+    }
+
+    @Test
+    fun `release without the expected universal APK is ignored`() {
+        val selected = GitHubReleaseClient.selectRelease(
+            """
+            [
+              {
+                "tag_name": "v0.2.3-alpha",
+                "draft": false,
+                "prerelease": true,
+                "assets": [
+                  {
+                    "name": "app-arm64-v8a-debug.apk",
+                    "browser_download_url": "https://github.com/Devildare687/StealthMesh/releases/download/v0.2.3-alpha/app-arm64-v8a-debug.apk",
+                    "size": 10
+                  }
+                ]
+              }
+            ]
+            """.trimIndent(),
+            currentVersionName = "0.2.2-alpha"
+        )
+
+        assertNull(selected)
+    }
+
+    @Test
+    fun `wrong repository and malformed release data are ignored safely`() {
+        val wrongRepository = release("v0.2.3-alpha", prerelease = true)
+            .replace("Devildare687/StealthMesh", "someone/else")
+
+        assertNull(
+            GitHubReleaseClient.selectRelease(
+                "[null, {}, \"irrelevant\", $wrongRepository]",
+                currentVersionName = "0.2.2-alpha"
+            )
+        )
+        assertNull(
+            GitHubReleaseClient.selectRelease(
+                "not-json",
+                currentVersionName = "0.2.2-alpha"
+            )
+        )
     }
 
     @Test
@@ -182,7 +331,7 @@ class GitHubReleaseClientTest {
 
     private fun client() = GitHubReleaseClient(
         context = context,
-        apiUrl = server.url("/releases/latest").toString(),
+        apiUrl = server.url("/releases").toString(),
         nowMillis = { nowMillis },
         routedClient = {
             OkHttpProvider.RoutedClient(
@@ -207,17 +356,31 @@ class GitHubReleaseClientTest {
         .addHeader("ETag", etag)
         .body(
             """
-            {
-              "tag_name": "v1.7.6",
-              "assets": [
-                {
-                  "name": "app-universal-debug.apk",
-                  "browser_download_url": "https://downloads.example/stealthmesh-universal.apk",
-                  "size": 25165824
-                }
-              ]
-            }
+            [${release("v1.7.6", prerelease = false)}]
             """.trimIndent()
         )
         .build()
+
+    private fun releaseList(vararg releases: String): String =
+        releases.joinToString(prefix = "[", postfix = "]")
+
+    private fun release(
+        tag: String,
+        prerelease: Boolean,
+        draft: Boolean = false
+    ): String =
+        """
+        {
+          "tag_name": "$tag",
+          "draft": $draft,
+          "prerelease": $prerelease,
+          "assets": [
+            {
+              "name": "app-universal-debug.apk",
+              "browser_download_url": "https://github.com/Devildare687/StealthMesh/releases/download/$tag/app-universal-debug.apk",
+              "size": 25165824
+            }
+          ]
+        }
+        """.trimIndent()
 }

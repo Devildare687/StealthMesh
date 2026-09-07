@@ -17,7 +17,7 @@ interface ApkDownloader {
     /**
      * Start or resume a download. If a partial download exists, it resumes automatically.
      */
-    fun startDownload()
+    fun startDownload(target: ApkReleaseTarget? = null)
 
     /**
      * Cancel an in-progress download. The partial file is kept for future resume.

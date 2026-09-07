@@ -1,5 +1,6 @@
 package io.github.devildare687.stealthmesh.util
 
+import io.github.devildare687.stealthmesh.BuildConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -25,8 +26,8 @@ class ApkDownloadSourceTest {
     fun `default source downloads the latest StealthMesh universal asset directly`() {
         assertEquals(
             listOf(
-                "https://github.com/Devildare687/StealthMesh/releases/latest/" +
-                    "download/app-universal-debug.apk"
+                "https://github.com/Devildare687/StealthMesh/releases/download/" +
+                    "v${BuildConfig.VERSION_NAME}/app-universal-debug.apk"
             ),
             DefaultApkDownloadSources.all.single().latestApkUrls
         )
@@ -190,6 +191,82 @@ class ApkDownloadSourceTest {
         assertFalse(AppVersion.isNewer("1.7.5", "1.7.4"))
         assertFalse(AppVersion.isNewer("v1.7.5", "1.7.5"))
         assertTrue(AppVersion.isNewer("1.7", "1.7.1"))
+        assertTrue(AppVersion.isNewer("0.2.2-alpha", "0.2.3-alpha"))
+        assertTrue(AppVersion.isNewer("0.3.0-alpha", "0.3.0-beta"))
+        assertTrue(AppVersion.isNewer("0.3.0-beta.2", "0.3.0-beta.10"))
+        assertTrue(AppVersion.isNewer("0.3.0-rc.1", "0.3.0"))
+        assertTrue(AppVersion.isNewer("0.3.0", "0.4.0-beta"))
+        assertFalse(AppVersion.isNewer("malformed", "0.4.0"))
+    }
+
+    @Test
+    fun `official release validation rejects wrong repository and package`() {
+        assertTrue(
+            OfficialStealthMeshRelease.isExpectedAsset(
+                name = "app-universal-debug.apk",
+                url = "https://github.com/Devildare687/StealthMesh/releases/download/" +
+                    "v0.2.3-alpha/app-universal-debug.apk",
+                tagName = "v0.2.3-alpha"
+            )
+        )
+        assertFalse(
+            OfficialStealthMeshRelease.isExpectedAsset(
+                name = "app-universal-debug.apk",
+                url = "https://github.com/other/project/releases/download/" +
+                    "v0.2.3-alpha/app-universal-debug.apk",
+                tagName = "v0.2.3-alpha"
+            )
+        )
+        assertTrue(
+            OfficialStealthMeshRelease.isExpectedPackage(
+                "io.github.devildare687.stealthmesh"
+            )
+        )
+        assertFalse(OfficialStealthMeshRelease.isExpectedPackage("com.bitchat.droid"))
+    }
+
+    @Test
+    fun `release APK version validation prevents downgrade and target mismatch`() {
+        assertTrue(
+            isAcceptableReleaseApkVersion(
+                installedVersionName = "0.2.2-alpha",
+                installedVersionCode = 40,
+                downloadedVersionName = "0.2.3-alpha",
+                downloadedVersionCode = 41,
+                expectedVersionName = "0.2.3-alpha"
+            )
+        )
+        assertFalse(
+            isAcceptableReleaseApkVersion(
+                installedVersionName = "0.2.2-alpha",
+                installedVersionCode = 40,
+                downloadedVersionName = "0.2.3-alpha",
+                downloadedVersionCode = 39,
+                expectedVersionName = "0.2.3-alpha"
+            )
+        )
+        assertFalse(
+            isAcceptableReleaseApkVersion(
+                installedVersionName = "0.2.2-alpha",
+                installedVersionCode = 40,
+                downloadedVersionName = "0.2.2-alpha",
+                downloadedVersionCode = 40,
+                expectedVersionName = "0.2.3-alpha"
+            )
+        )
+    }
+
+    @Test
+    fun `selected release target survives the WorkManager data boundary`() {
+        val target = ApkReleaseTarget(
+            versionName = "0.2.3-alpha",
+            tagName = "v0.2.3-alpha",
+            assetName = "app-universal-debug.apk",
+            assetUrl = "https://github.com/Devildare687/StealthMesh/releases/download/" +
+                "v0.2.3-alpha/app-universal-debug.apk"
+        )
+
+        assertEquals(target, ApkDownloadWorker.releaseTarget(ApkDownloadWorker.inputData(target)))
     }
 
     @Test
