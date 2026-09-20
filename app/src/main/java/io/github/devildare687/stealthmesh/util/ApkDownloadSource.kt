@@ -1,7 +1,9 @@
 package io.github.devildare687.stealthmesh.util
 
 import androidx.annotation.StringRes
+import io.github.devildare687.stealthmesh.BuildConfig
 import io.github.devildare687.stealthmesh.R
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -40,6 +42,54 @@ data class ApkDownloadSource(
     }
 }
 
+internal object OfficialStealthMeshRelease {
+    const val OWNER = "Devildare687"
+    const val REPOSITORY = "StealthMesh"
+    const val APPLICATION_ID = "io.github.devildare687.stealthmesh"
+    const val UNIVERSAL_APK_NAME = "app-universal-debug.apk"
+    const val RELEASES_API_URL =
+        "https://api.github.com/repos/$OWNER/$REPOSITORY/releases?per_page=30"
+
+    fun isExpectedAsset(name: String, url: String, tagName: String): Boolean {
+        if (name != UNIVERSAL_APK_NAME || tagName.isBlank()) return false
+        val parsed = url.toHttpUrlOrNull() ?: return false
+        return parsed.isHttps &&
+            parsed.host.equals("github.com", ignoreCase = true) &&
+            parsed.query == null &&
+            parsed.fragment == null &&
+            parsed.pathSegments == listOf(
+                OWNER,
+                REPOSITORY,
+                "releases",
+                "download",
+                tagName,
+                UNIVERSAL_APK_NAME
+            )
+    }
+
+    fun isExpectedPackage(packageName: String): Boolean = packageName == APPLICATION_ID
+}
+
+data class ApkReleaseTarget(
+    val versionName: String,
+    val tagName: String,
+    val assetName: String,
+    val assetUrl: String
+) {
+    init {
+        require(AppVersion.parse(versionName) != null) { "Release version must be valid" }
+        require(OfficialStealthMeshRelease.isExpectedAsset(assetName, assetUrl, tagName)) {
+            "Release asset must belong to the official StealthMesh repository"
+        }
+    }
+
+    fun downloadSource(): ApkDownloadSource = ApkDownloadSource(
+        id = DefaultApkDownloadSources.GITHUB_ID,
+        displayName = "GitHub Releases",
+        latestApkUrl = assetUrl
+    )
+}
+
 internal object DefaultApkDownloadSources {
     const val GITHUB_ID = "github-releases"
 
@@ -48,8 +98,9 @@ internal object DefaultApkDownloadSources {
             id = GITHUB_ID,
             displayName = "GitHub Releases",
             latestApkUrl =
-                "https://github.com/Devildare687/StealthMesh/releases/latest/" +
-                    "download/app-universal-debug.apk"
+                "https://github.com/Devildare687/StealthMesh/releases/download/" +
+                    "v${BuildConfig.VERSION_NAME}/" +
+                    "app-universal-debug.apk"
         )
     )
 }
@@ -217,21 +268,87 @@ internal object ApkDownloadHttpErrors {
 }
 
 internal object AppVersion {
-    fun isNewer(currentVersion: String, candidateVersion: String): Boolean {
-        val current = currentVersion.removePrefix("v").trim()
-        val candidate = candidateVersion.removePrefix("v").trim()
-        if (current == candidate) return false
+    internal data class Parsed(
+        val major: Long,
+        val minor: Long,
+        val patch: Long,
+        val prerelease: List<String>
+    ) : Comparable<Parsed> {
+        override fun compareTo(other: Parsed): Int {
+            compareValues(major, other.major).takeIf { it != 0 }?.let { return it }
+            compareValues(minor, other.minor).takeIf { it != 0 }?.let { return it }
+            compareValues(patch, other.patch).takeIf { it != 0 }?.let { return it }
 
-        val currentParts = current.split(".").mapNotNull { it.toIntOrNull() }
-        val candidateParts = candidate.split(".").mapNotNull { it.toIntOrNull() }
-        val maxLength = maxOf(currentParts.size, candidateParts.size)
+            if (prerelease.isEmpty() && other.prerelease.isEmpty()) return 0
+            if (prerelease.isEmpty()) return 1
+            if (other.prerelease.isEmpty()) return -1
 
-        for (index in 0 until maxLength) {
-            val currentPart = currentParts.getOrNull(index) ?: 0
-            val candidatePart = candidateParts.getOrNull(index) ?: 0
-            if (candidatePart != currentPart) return candidatePart > currentPart
+            val length = maxOf(prerelease.size, other.prerelease.size)
+            for (index in 0 until length) {
+                val left = prerelease.getOrNull(index) ?: return -1
+                val right = other.prerelease.getOrNull(index) ?: return 1
+                val leftNumber = left.toLongOrNull()
+                val rightNumber = right.toLongOrNull()
+                val compared = when {
+                    leftNumber != null && rightNumber != null ->
+                        compareValues(leftNumber, rightNumber)
+                    leftNumber != null -> -1
+                    rightNumber != null -> 1
+                    else -> left.compareTo(right, ignoreCase = true)
+                }
+                if (compared != 0) return compared
+            }
+            return 0
         }
-        return false
+    }
+
+    private val VERSION_PATTERN = Regex(
+        """^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z][0-9A-Za-z.-]*))?(?:\+[0-9A-Za-z.-]+)?$"""
+    )
+
+    internal fun parse(version: String): Parsed? {
+        val normalized = version.removePrefix("v").trim()
+        val match = VERSION_PATTERN.matchEntire(normalized) ?: return null
+        return Parsed(
+            major = match.groupValues[1].toLongOrNull() ?: return null,
+            minor = match.groupValues[2].toLongOrNull() ?: 0L,
+            patch = match.groupValues[3].toLongOrNull() ?: 0L,
+            prerelease = match.groupValues[4]
+                .takeIf { it.isNotEmpty() }
+                ?.split('.', '-')
+                .orEmpty()
+        )
+    }
+
+    fun isNewer(currentVersion: String, candidateVersion: String): Boolean {
+        val current = parse(currentVersion) ?: return false
+        val candidate = parse(candidateVersion) ?: return false
+        return candidate > current
+    }
+
+    fun isEquivalent(firstVersion: String, secondVersion: String): Boolean {
+        val first = parse(firstVersion) ?: return false
+        val second = parse(secondVersion) ?: return false
+        return first.compareTo(second) == 0
+    }
+
+    fun isPrerelease(version: String): Boolean = parse(version)?.prerelease?.isNotEmpty() == true
+}
+
+internal fun isAcceptableReleaseApkVersion(
+    installedVersionName: String,
+    installedVersionCode: Long,
+    downloadedVersionName: String,
+    downloadedVersionCode: Long,
+    expectedVersionName: String
+): Boolean {
+    if (!AppVersion.isEquivalent(downloadedVersionName, expectedVersionName)) return false
+    return when {
+        AppVersion.isNewer(installedVersionName, downloadedVersionName) ->
+            downloadedVersionCode > installedVersionCode
+        AppVersion.isEquivalent(installedVersionName, downloadedVersionName) ->
+            downloadedVersionCode >= installedVersionCode
+        else -> false
     }
 }
 

@@ -176,6 +176,7 @@ class ApkDownloadViewModel internal constructor(
     val effect = _effect.receiveAsFlow()
 
     private var metadataRefreshJob: Job? = null
+    private var selectedRelease: GitHubReleaseClient.Release? = null
 
     init {
         observeDownloader()
@@ -306,7 +307,7 @@ class ApkDownloadViewModel internal constructor(
                 downloadProgress = partial ?: 0
             )
         }
-        downloader.startDownload()
+        downloader.startDownload(selectedRelease?.downloadTarget())
     }
 
     private fun checkStatus() {
@@ -355,6 +356,7 @@ class ApkDownloadViewModel internal constructor(
             _state.update { it.copy(releaseStatus = ApkReleaseStatus.Checking) }
             latestReleaseProvider.latestRelease()
                 .onSuccess { snapshot ->
+                    selectedRelease = snapshot.release
                     val shared = shareableReady(_state.value.apkStatus)
                     _state.update {
                         it.copy(
@@ -370,6 +372,7 @@ class ApkDownloadViewModel internal constructor(
                     }
                 }
                 .onFailure {
+                    selectedRelease = null
                     // Metadata is an optional enhancement. Keep the locally resolved APK state.
                     _state.update { it.copy(releaseStatus = ApkReleaseStatus.Unknown) }
                 }

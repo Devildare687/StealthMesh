@@ -30,7 +30,8 @@ import java.security.MessageDigest
  */
 class UniversalApkManager(
     private val context: Context,
-    private val downloadSources: List<ApkDownloadSource> = DefaultApkDownloadSources.all
+    private val downloadSources: List<ApkDownloadSource> = DefaultApkDownloadSources.all,
+    private val expectedRelease: ApkReleaseTarget? = null
 ) {
     init {
         require(downloadSources.map { it.id }.distinct().size == downloadSources.size) {
@@ -229,7 +230,9 @@ class UniversalApkManager(
                     // resume; only the promotion is abandoned.
                     ensureActive()
 
-                    val version = downloadedVersionName(tempFile)
+                    val downloaded = downloadedApkInfo(tempFile)
+                    validateExpectedRelease(downloaded)
+                    val version = downloaded.versionName
                     val safeVersion = version.replace(Regex("[^A-Za-z0-9._-]"), "_")
                     val finalFileName = "$APK_FILE_PREFIX$safeVersion.apk"
                     val finalFile = File(cacheDir, finalFileName)
@@ -637,16 +640,57 @@ class UniversalApkManager(
         }
     }
 
-    private fun downloadedVersionName(apkFile: File): String {
+    private fun downloadedApkInfo(apkFile: File): DownloadedApkInfo {
         val packageInfo = context.packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0)
             ?: invalidDownloadedApk(ApkDownloadFailureReason.ApkUnreadable, "unreadable APK")
-        if (packageInfo.packageName != context.packageName) {
+        if (!OfficialStealthMeshRelease.isExpectedPackage(context.packageName) ||
+            !OfficialStealthMeshRelease.isExpectedPackage(packageInfo.packageName)
+        ) {
             invalidDownloadedApk(ApkDownloadFailureReason.NotBitchat, "wrong package")
         }
-        return packageInfo.versionName
+        val versionName = packageInfo.versionName
             ?.takeIf { it.isNotBlank() }
             ?: invalidDownloadedApk(ApkDownloadFailureReason.NoVersion, "no version name")
+        return DownloadedApkInfo(
+            versionName = versionName,
+            versionCode = packageVersionCode(packageInfo)
+        )
     }
+
+    private fun validateExpectedRelease(downloaded: DownloadedApkInfo) {
+        val expected = expectedRelease ?: return
+        val installed = context.packageManager.getPackageInfo(context.packageName, 0)
+        val installedVersion = installed.versionName
+            ?.takeIf { it.isNotBlank() }
+            ?: BuildConfig.VERSION_NAME
+        if (!isAcceptableReleaseApkVersion(
+                installedVersionName = installedVersion,
+                installedVersionCode = packageVersionCode(installed),
+                downloadedVersionName = downloaded.versionName,
+                downloadedVersionCode = downloaded.versionCode,
+                expectedVersionName = expected.versionName
+            )
+        ) {
+            invalidDownloadedApk(
+                ApkDownloadFailureReason.Generic,
+                "release version mismatch or downgrade"
+            )
+        }
+    }
+
+    private fun packageVersionCode(packageInfo: android.content.pm.PackageInfo): Long {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toLong()
+        }
+    }
+
+    private data class DownloadedApkInfo(
+        val versionName: String,
+        val versionCode: Long
+    )
 
     private fun invalidDownloadedApk(
         reason: ApkDownloadFailureReason,
