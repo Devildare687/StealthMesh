@@ -40,12 +40,43 @@ class ApkDownloadWorker(
         const val KEY_ERROR_ARGS = "error_args"
         const val KEY_RESUMABLE_PERCENT = "resumable_percent"
 
+        private const val KEY_TARGET_VERSION = "target_version"
+        private const val KEY_TARGET_TAG = "target_tag"
+        private const val KEY_TARGET_ASSET_NAME = "target_asset_name"
+        private const val KEY_TARGET_ASSET_URL = "target_asset_url"
+
         private const val CHANNEL_ID = "apk_download"
         private const val NOTIFICATION_ID = 4201
         private const val NOTIFY_STEP_PERCENT = 5
+
+        internal fun inputData(target: ApkReleaseTarget?): Data {
+            if (target == null) return Data.EMPTY
+            return Data.Builder()
+                .putString(KEY_TARGET_VERSION, target.versionName)
+                .putString(KEY_TARGET_TAG, target.tagName)
+                .putString(KEY_TARGET_ASSET_NAME, target.assetName)
+                .putString(KEY_TARGET_ASSET_URL, target.assetUrl)
+                .build()
+        }
+
+        internal fun releaseTarget(data: Data): ApkReleaseTarget? {
+            val version = data.getString(KEY_TARGET_VERSION) ?: return null
+            val tag = data.getString(KEY_TARGET_TAG) ?: return null
+            val assetName = data.getString(KEY_TARGET_ASSET_NAME) ?: return null
+            val assetUrl = data.getString(KEY_TARGET_ASSET_URL) ?: return null
+            return runCatching {
+                ApkReleaseTarget(version, tag, assetName, assetUrl)
+            }.getOrNull()
+        }
     }
 
-    private val apkManager = UniversalApkManager(applicationContext)
+    private val apkManager = releaseTarget(inputData)?.let { target ->
+        UniversalApkManager(
+            context = applicationContext,
+            downloadSources = listOf(target.downloadSource()),
+            expectedRelease = target
+        )
+    } ?: UniversalApkManager(applicationContext)
     private val notificationManager =
         applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 

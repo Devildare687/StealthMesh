@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.devildare687.stealthmesh.R
 import io.github.devildare687.stealthmesh.util.ApkDownloader
 import io.github.devildare687.stealthmesh.util.ApkDownloadFailureReason
+import io.github.devildare687.stealthmesh.util.ApkReleaseTarget
 import io.github.devildare687.stealthmesh.util.GitHubReleaseClient
 import io.github.devildare687.stealthmesh.util.LatestReleaseProvider
 import io.github.devildare687.stealthmesh.util.ShareableApkVariant
@@ -68,6 +69,34 @@ class ApkDownloadViewModelTest {
 
         assertEquals("1.7.5", ready.version)
         assertTrue(statusWhenMetadataStarted.await() is ApkPreparationStatus.Ready)
+    }
+
+    @Test
+    fun `selected release asset is passed to the downloader`() = runTest {
+        val manager = managerWithLocalApk()
+        val downloader = FakeDownloader()
+        val release = GitHubReleaseClient.Release(
+            versionName = "1.7.6",
+            tagName = "v1.7.6",
+            prerelease = false,
+            universalApkSize = 24L * 1024 * 1024,
+            universalApkUrl = "https://github.com/Devildare687/StealthMesh/releases/" +
+                "download/v1.7.6/app-universal-debug.apk",
+            universalApkName = "app-universal-debug.apk"
+        )
+        val metadata = object : LatestReleaseProvider {
+            override suspend fun latestRelease(): Result<GitHubReleaseClient.ReleaseSnapshot> =
+                Result.success(GitHubReleaseClient.ReleaseSnapshot(release, isStale = false))
+        }
+        val viewModel = ApkDownloadViewModel(application, manager, downloader, metadata)
+
+        viewModel.onEvent(ApkUiEvent.CheckStatus)
+        awaitKnownRelease(viewModel)
+        viewModel.onEvent(ApkUiEvent.PrepareRowClicked)
+        viewModel.onEvent(ApkUiEvent.ConfirmDownload)
+
+        assertEquals(release.downloadTarget(), downloader.lastTarget)
+        assertEquals(1, downloader.startCount)
     }
 
     @Test
@@ -243,6 +272,17 @@ class ApkDownloadViewModelTest {
         error("unreachable")
     }
 
+    private suspend fun awaitKnownRelease(
+        viewModel: ApkDownloadViewModel
+    ): ApkReleaseStatus.Known = withTimeout(5_000L) {
+        while (true) {
+            (viewModel.state.value.releaseStatus as? ApkReleaseStatus.Known)
+                ?.let { return@withTimeout it }
+            delay(1L)
+        }
+        error("unreachable")
+    }
+
     private suspend fun awaitError(
         viewModel: ApkDownloadViewModel
     ): ApkPreparationStatus.Error = withTimeout(5_000L) {
@@ -260,9 +300,11 @@ class ApkDownloadViewModelTest {
         private val mutableState = MutableStateFlow(initial)
         override val downloadState = mutableState.asStateFlow()
         var startCount = 0
+        var lastTarget: ApkReleaseTarget? = null
 
-        override fun startDownload() {
+        override fun startDownload(target: ApkReleaseTarget?) {
             startCount += 1
+            lastTarget = target
             mutableState.value = ApkDownloader.DownloadState.Downloading(
                 progressPercent = 0,
                 phase = ApkDownloader.DownloadPhase.SelectingSource
