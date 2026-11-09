@@ -26,12 +26,13 @@ class WorkManagerApkDownloader(context: Context) : ApkDownloader {
         workManager.getWorkInfosForUniqueWorkFlow(ApkDownloadWorker.WORK_NAME)
             .map { workInfos -> mapWorkInfoToState(workInfos.firstOrNull()) }
 
-    override fun startDownload() {
+    override fun startDownload(target: ApkReleaseTarget?) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
         val request = OneTimeWorkRequestBuilder<ApkDownloadWorker>()
+            .setInputData(ApkDownloadWorker.inputData(target))
             .setConstraints(constraints)
             .setBackoffCriteria(
                 BackoffPolicy.EXPONENTIAL,
